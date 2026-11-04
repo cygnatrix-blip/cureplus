@@ -105,6 +105,11 @@ class OrganizationApprovalTest extends TestCase
         [$organization] = $this->pendingClinic();
 
         $this->get('/'.$organization->slug)->assertNotFound();
+
+        $this->withProof($organization);
+        $this->actingAs($this->superAdmin(), 'platform')->post(route('admin.organizations.approve', $organization))->assertSessionHas('success');
+
+        $this->get('/'.$organization->slug)->assertOk()->assertSee($organization->name);
     }
 
     public function test_prescription_printing_is_blocked_until_approved(): void
