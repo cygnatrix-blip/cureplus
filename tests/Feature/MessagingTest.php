@@ -311,10 +311,10 @@ class MessagingTest extends TestCase
 
     public function test_calling_a_token_and_taking_payment_tell_the_patient(): void
     {
-        [$organization, $owner, $location, $doctor, $patient] = $this->clinic();
+        [$organization, , $location, $doctor, $patient] = $this->clinic();
         $appointment = Appointment::factory()->create(['organization_id' => $organization->id, 'location_id' => $location->id, 'doctor_user_id' => $doctor->id, 'patient_id' => $patient->id, 'token_number' => 42]);
 
-        $this->actingAs($owner, 'web')->post(route('app.visits.start', $appointment))->assertRedirect();
+        $this->actingAs($doctor, 'web')->post(route('app.visits.start', $appointment))->assertRedirect();
         $this->assertStringContainsString('token 42', $this->sms->sent[0][1]);
 
         $billing = app(BillingService::class);

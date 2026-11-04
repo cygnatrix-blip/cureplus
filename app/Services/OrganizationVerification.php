@@ -118,6 +118,40 @@ class OrganizationVerification
         $this->notifyOwners($organization, 'organization_access_changed', ['date' => $accessUntil ? Carbon::parse($accessUntil)->format('d M Y') : 'no end date']);
     }
 
+    /**
+     * Daily. One notice inside the last week and another on the final two days, so a practice
+     * is never locked out mid-morning without warning. If cron misses a day, the next run
+     * still sends it. The key includes the date, so a renewed practice is warned afresh.
+     */
+    public function sendAccessReminders(): int
+    {
+        $sent = 0;
+
+        $ending = Organization::query()
+            ->where('status', OrganizationStatus::Approved)
+            ->whereDate('access_until', '>=', today())
+            ->whereDate('access_until', '<=', today()->addDays(7))
+            ->get();
+
+        foreach ($ending as $organization) {
+            $reminder = today()->diffInDays($organization->access_until) <= 1 ? 'final' : 'week';
+
+            foreach ($this->owners($organization) as $owner) {
+                if ($owner->user !== null) {
+                    $this->notifier->notifyAccountOwner(
+                        $owner->user,
+                        'organization_access_ending',
+                        ['clinic' => $organization->name, 'date' => $organization->access_until->format('d M Y')],
+                        "access-ending:{$organization->id}:{$organization->access_until->toDateString()}:{$reminder}:{$owner->user_id}",
+                    );
+                    $sent++;
+                }
+            }
+        }
+
+        return $sent;
+    }
+
     public function reject(Organization $organization, PlatformAdmin $admin, string $reason): void
     {
         DB::transaction(function () use ($organization, $admin, $reason): void {

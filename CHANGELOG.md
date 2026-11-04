@@ -9,6 +9,8 @@
 - Cashfree added alongside Razorpay. Each practice chooses one.
 - Only the doctor on a visit can write its prescription. Owners can read but not write them.
 - Smoke test opens every page as every role.
+- Owners can read consultations but not change them, unless they are that patient's doctor.
+- Owners are reminded by email and WhatsApp a week before access ends and again the day before.
 
 ### Practice websites, prescription list, doctor approval
 

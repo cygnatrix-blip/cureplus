@@ -133,6 +133,7 @@ Create templates in Meta Business Manager with these exact names and body parame
 | `organization_rejected` | name, clinic, reason |
 | `organization_restored` | name, clinic |
 | `organization_access_changed` | name, clinic, date |
+| `organization_access_ending` | name, clinic, date |
 | `doctor_verified` | name |
 | `doctor_rejected` | name, reason |
 

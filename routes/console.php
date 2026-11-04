@@ -12,6 +12,7 @@ use App\Services\Backups\BackupService;
 use App\Services\Billing\SubscriptionService;
 use App\Services\Domains\DomainService;
 use App\Services\Messaging\ReminderScheduler;
+use App\Services\OrganizationVerification;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schedule;
@@ -68,6 +69,10 @@ Schedule::call(fn () => app(DomainService::class)->recheckActive())
 Schedule::call(fn () => app(SubscriptionService::class)->enforce())
     ->name('subscriptions')
     ->dailyAt('03:00');
+
+Schedule::call(fn () => app(OrganizationVerification::class)->sendAccessReminders())
+    ->name('access-reminders')
+    ->dailyAt('09:00');
 
 Schedule::call(fn () => app(ReminderScheduler::class)->run())
     ->name('reminders')

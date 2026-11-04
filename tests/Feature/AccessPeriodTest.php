@@ -8,6 +8,8 @@ use App\Models\AuditLog;
 use App\Models\Organization;
 use App\Models\OrganizationDocument;
 use App\Models\PlatformAdmin;
+use App\Services\OrganizationVerification;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Bus;
 use Tests\TestCase;
 
@@ -139,6 +141,83 @@ class AccessPeriodTest extends TestCase
 
         $organization->forceFill(['access_until' => today()->addDays(5)])->save();
         $this->get(route('app.dashboard'))->assertSee('Your access ends on');
+    }
+
+    public function test_reminders_go_out_a_week_before_and_on_the_last_day_once_each(): void
+    {
+        Bus::fake([SendMessage::class]);
+        [$organization, $owner] = $this->organizationWithOwner();
+        $organization->forceFill(['access_until' => today()->addDays(7)])->save();
+        $verification = app(OrganizationVerification::class);
+        $reminders = fn () => Bus::dispatched(SendMessage::class, fn (SendMessage $job) => $job->event === 'organization_access_ending' && $job->to === $owner->email)->count();
+
+        $verification->sendAccessReminders();
+        $verification->sendAccessReminders();
+        $this->assertSame(1, $reminders(), 'Running twice must not send twice.');
+
+        $this->travel(3)->days();
+        $verification->sendAccessReminders();
+        $this->assertSame(1, $reminders(), 'No more until the final notice.');
+
+        $this->travel(3)->days();
+        $verification->sendAccessReminders();
+        $this->assertSame(2, $reminders(), 'The day before gets the final notice.');
+
+        $this->travel(1)->days();
+        $verification->sendAccessReminders();
+        $this->assertSame(2, $reminders());
+    }
+
+    public function test_reminder_text_names_the_date_and_goes_by_whatsapp_too(): void
+    {
+        Bus::fake([SendMessage::class]);
+        config(['messages.whatsapp.token' => 't', 'messages.whatsapp.phone_number_id' => 'p']);
+        [$organization, $owner] = $this->organizationWithOwner();
+        $organization->forceFill(['access_until' => today()->addDay()])->save();
+
+        app(OrganizationVerification::class)->sendAccessReminders();
+
+        Bus::assertDispatched(SendMessage::class, fn (SendMessage $job) => $job->channel === 'whatsapp' && $job->to === $owner->mobile && $job->variables['date'] === today()->addDay()->format('d M Y'));
+    }
+
+    public function test_no_reminder_for_far_off_dates_no_date_ended_or_suspended_practices(): void
+    {
+        Bus::fake([SendMessage::class]);
+        $verification = app(OrganizationVerification::class);
+
+        foreach ([today()->addDays(8), null, today()->subDay()] as $date) {
+            [$organization] = $this->organizationWithOwner();
+            $organization->forceFill(['access_until' => $date])->save();
+        }
+
+        [$suspended] = $this->organizationWithOwner();
+        $suspended->forceFill(['access_until' => today()->addDay(), 'status' => OrganizationStatus::Suspended])->save();
+
+        $verification->sendAccessReminders();
+
+        Bus::assertNotDispatched(SendMessage::class);
+    }
+
+    public function test_renewing_starts_the_reminders_afresh_for_the_new_date(): void
+    {
+        Bus::fake([SendMessage::class]);
+        [$organization] = $this->organizationWithOwner();
+        $organization->forceFill(['access_until' => today()->addDays(5)])->save();
+        $verification = app(OrganizationVerification::class);
+        $verification->sendAccessReminders();
+
+        $organization->forceFill(['access_until' => today()->addDays(6)])->save();
+        $verification->sendAccessReminders();
+
+        $this->assertSame(2, Bus::dispatched(SendMessage::class, fn (SendMessage $job) => $job->event === 'organization_access_ending' && $job->channel === 'email')->count());
+    }
+
+    public function test_the_reminder_is_scheduled_every_day(): void
+    {
+        $events = collect(app(Schedule::class)->events())->filter(fn ($event) => $event->description === 'access-reminders');
+
+        $this->assertCount(1, $events);
+        $this->assertSame('0 9 * * *', $events->first()->expression);
     }
 
     public function test_the_admin_sees_the_date_on_the_organization_page_and_list(): void

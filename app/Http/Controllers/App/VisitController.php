@@ -14,6 +14,7 @@ use App\Services\AuditLogger;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
@@ -32,6 +33,15 @@ class VisitController extends Controller
     {
         abort_if($appointment->status === AppointmentStatus::Cancelled, 422);
 
+        // An owner can open a consultation the doctor has begun, but not begin one.
+        $existing = Visit::query()->where('appointment_id', $appointment->id)->first();
+
+        if (! Gate::check('start', [Visit::class, $appointment])) {
+            return $existing
+                ? redirect()->route('app.visits.show', $existing)
+                : back()->with('error', 'Only this patient\'s doctor can start the consultation.');
+        }
+
         $visit = Visit::query()->firstOrCreate(['appointment_id' => $appointment->id], [
             'location_id' => $appointment->location_id,
             'patient_id' => $appointment->patient_id,
@@ -41,7 +51,7 @@ class VisitController extends Controller
         ]);
 
         // A nurse opens the visit to record vitals; only a clinician moves the queue on.
-        if (Gate::check('consultations.manage') && $appointment->status !== AppointmentStatus::InConsultation && $appointment->status !== AppointmentStatus::Completed) {
+        if ((int) $appointment->doctor_user_id === (int) Auth::id() && Gate::check('consultations.manage') && $appointment->status !== AppointmentStatus::InConsultation && $appointment->status !== AppointmentStatus::Completed) {
             $appointments->transition($appointment, AppointmentStatus::InConsultation);
         }
 

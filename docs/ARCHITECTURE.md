@@ -328,11 +328,11 @@ To render a PDF there, the tenant is set just for that call: `$tenant->run($orga
 
 **Prescription access:** `prescriptions.view` or `prescriptions.manage` is required. Seeing a patient's contact details (`patients.view`) is not enough. Owners can grant `prescriptions.view` to other roles under Role permissions.
 
-**Access period:** `organizations.access_until` is the last day a practice may use the product, set at approval or later on the organization page. `Organization::isActive()` is false after it, so everything that already checks approval closes too: the portal, booking, payments, paid messages and the API. No status changes, so moving the date restores access at once.
+**Access period:** `organizations.access_until` is the last day a practice may use the product, set at approval or later on the organization page. `Organization::isActive()` is false after it, so everything that already checks approval closes too: the portal, booking, payments, paid messages and the API. No status changes, so moving the date restores access at once. `sendAccessReminders` warns owners inside the last week and again at the end, once each per date.
 
 **Payment gateways:** Razorpay and Cashfree implement `PaymentGateway`, and each practice enables one. `Payment.mode` records which took a payment, so refunds and webhooks go to the right one after a switch. Cashfree's return to our site is unsigned, so `paidOrderId` asks Cashfree directly and never trusts the address.
 
-**Who writes prescriptions:** only the doctor on the visit (`VisitPolicy::prescribe`). Owners can read them but not write them, unless they are that visit's doctor.
+**Who changes a medical record:** only the doctor on the visit (`VisitPolicy`). Owners can read consultations and prescriptions but not write, complete, add vitals or start a consultation, unless they are that patient's doctor. Nurses still record vitals.
 
 **Booking never matches on mobile.** It reuses a clinic's record only when the proved email and the name both match. Otherwise knowing someone's name and number would attach a stranger's login to their record, so a mismatch makes a new record for the clinic to review.
 

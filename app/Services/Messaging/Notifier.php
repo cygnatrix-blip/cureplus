@@ -84,16 +84,16 @@ class Notifier
      *
      * @param  array<string, string|int>  $variables
      */
-    public function notifyAccountOwner(User $owner, string $event, array $variables): void
+    public function notifyAccountOwner(User $owner, string $event, array $variables, ?string $dedupeKey = null): void
     {
         $variables += ['name' => $owner->name];
 
         if ($owner->email) {
-            $this->queue(null, 'email', $event, $owner->email, $variables, null);
+            $this->queue(null, 'email', $event, $owner->email, $variables, $dedupeKey);
         }
 
         if ($owner->mobile && $this->whatsApp->forOrganization(null) !== null) {
-            $this->queue(null, 'whatsapp', $event, $owner->mobile, $variables, null);
+            $this->queue(null, 'whatsapp', $event, $owner->mobile, $variables, $dedupeKey);
         }
     }
 

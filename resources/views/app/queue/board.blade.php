@@ -26,7 +26,7 @@
                         @endcan
                         @can('billing.manage')<a class="btn btn-sm btn-secondary" href="{{ route('app.invoices.create', ['appointment' => $appointment->id]) }}">Bill</a>@endcan
                         @if (in_array($appointment->status, [$status::Booked, $status::CheckedIn, $status::InConsultation], true))
-                            @can('create', \App\Models\Visit::class)
+                            @can('start', [\App\Models\Visit::class, $appointment])
                                 <form method="POST" action="{{ route('app.visits.start', $appointment) }}">@csrf<button class="btn btn-sm btn-primary">{{ $appointment->status === $status::InConsultation ? 'Open' : (auth('web')->user()?->can('consultations.manage') ? 'Start' : 'Vitals') }}</button></form>
                             @endcan
                         @endif
