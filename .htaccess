@@ -1,0 +1,13 @@
+# Fallback only, for when the domain's document root cannot point at public/.
+# It sends every request into public/ and blocks the project root (.env, vendor,
+# storage). The preferred setup is in docs/DEPLOYMENT.md.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+Options -Indexes

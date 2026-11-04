@@ -1,0 +1,13 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 6
+    paths:
+        - app
+        - bootstrap/app.php
+        - routes
+    tmpDir: storage/framework/cache/phpstan
+    ignoreErrors:
+        # Eloquent relation generics add noise without catching real bugs here.
+        - identifier: missingType.generics

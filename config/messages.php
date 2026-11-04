@@ -1,0 +1,93 @@
+<?php
+
+/*
+| Every automatic message. WhatsApp sends the named template, which must be approved in
+| Meta Business Manager with these body parameters in this order. SMS text must match a
+| DLT-registered template word for word before Indian carriers will deliver it.
+| Message text stays free of clinical detail: lock screens show it to anyone nearby.
+*/
+return [
+    'events' => [
+        'appointment_booked' => [
+            'label' => 'Booking confirmations',
+            'whatsapp_template' => 'appointment_booked',
+            'params' => ['name', 'doctor', 'clinic', 'time', 'token'],
+            'text' => 'Hi {name}, your appointment with {doctor} at {clinic} is on {time}. Token {token}.',
+            'subject' => 'Your appointment at {clinic}',
+            'push_title' => 'Appointment booked',
+        ],
+        'appointment_reminder' => [
+            'label' => 'Appointment reminders',
+            'whatsapp_template' => 'appointment_reminder',
+            'params' => ['name', 'doctor', 'clinic', 'time'],
+            'text' => 'Hi {name}, reminder: your appointment with {doctor} at {clinic} is on {time}.',
+            'subject' => 'Appointment reminder from {clinic}',
+            'push_title' => 'Appointment reminder',
+        ],
+        'token_called' => [
+            'label' => 'Your turn in the queue',
+            'whatsapp_template' => 'token_called',
+            'params' => ['name', 'token', 'doctor'],
+            'text' => 'Hi {name}, token {token} is being called by {doctor}. Please come in.',
+            'subject' => 'Your token has been called',
+            'push_title' => 'It is your turn',
+        ],
+        'follow_up_due' => [
+            'label' => 'Follow-up reminders',
+            'whatsapp_template' => 'follow_up_due',
+            'params' => ['name', 'doctor', 'clinic', 'date'],
+            'text' => 'Hi {name}, your follow-up with {doctor} at {clinic} is due on {date}. Please book a visit.',
+            'subject' => 'Your follow-up is due',
+            'push_title' => 'Follow-up due',
+        ],
+        'payment_received' => [
+            'label' => 'Payment receipts',
+            'whatsapp_template' => 'payment_received',
+            'params' => ['name', 'amount', 'clinic'],
+            'text' => 'Hi {name}, we received {amount} at {clinic}. Thank you.',
+            'subject' => 'Payment received by {clinic}',
+            'push_title' => 'Payment received',
+        ],
+        'payment_link' => [
+            'label' => 'Payment links',
+            'whatsapp_template' => 'payment_link',
+            'params' => ['name', 'amount', 'clinic', 'link'],
+            'text' => 'Hi {name}, please pay {amount} to {clinic} here: {link}',
+            'subject' => 'Your bill from {clinic}',
+            'push_title' => 'Payment link',
+        ],
+        'document_ready' => [
+            'label' => 'Prescriptions and bills',
+            'whatsapp_template' => 'document_ready',
+            'params' => ['name', 'document', 'clinic', 'link'],
+            'text' => 'Hi {name}, your {document} from {clinic} is ready: {link}',
+            'subject' => 'Your {document} from {clinic}',
+            'push_title' => 'Document ready',
+        ],
+    ],
+
+    'staff_events' => [
+        'announcement' => ['label' => 'Platform announcements', 'push_title' => 'Announcement', 'text' => '{title}: {body}'],
+    ],
+
+    'whatsapp' => [
+        'driver' => env('WHATSAPP_DRIVER', 'cloud'),
+        'token' => env('WHATSAPP_TOKEN'),
+        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
+        'language' => env('WHATSAPP_TEMPLATE_LANGUAGE', 'en'),
+        'api_version' => env('WHATSAPP_API_VERSION', 'v21.0'),
+    ],
+
+    'push' => [
+        'subject' => env('VAPID_SUBJECT'),
+        'public_key' => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+    ],
+
+    'reminders' => [
+        // Nobody wants a clinic reminder at midnight.
+        'quiet_before' => 8,
+        'quiet_after' => 21,
+        'batch_size' => 500,
+    ],
+];

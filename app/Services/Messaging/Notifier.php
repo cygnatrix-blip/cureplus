@@ -1,0 +1,154 @@
+<?php
+
+namespace App\Services\Messaging;
+
+use App\Contracts\PushSender;
+use App\Jobs\SendMessage;
+use App\Models\MessageLog;
+use App\Models\NotificationPreference;
+use App\Models\Patient;
+use App\Models\PatientAccount;
+use App\Models\PushSubscription;
+use App\Models\User;
+use App\Services\Billing\FeatureGate;
+use App\Services\Billing\PlanLimits;
+use App\Support\Mask;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Throwable;
+
+/**
+ * The single entry point for automatic messages. It decides who gets what on which
+ * channel; SendMessage does the sending, on the queue.
+ */
+class Notifier
+{
+    public function __construct(
+        private readonly WhatsAppFactory $whatsApp,
+        private readonly PushSender $push,
+        private readonly PlanLimits $limits,
+        private readonly FeatureGate $features,
+    ) {}
+
+    /**
+     * WhatsApp is preferred and SMS is the fallback, not both, since each one costs money.
+     * Email and push are free, so they are added whenever they are available.
+     *
+     * @param  array<string, string|int>  $variables
+     */
+    public function notifyPatient(Patient $patient, string $event, array $variables, ?string $dedupeKey = null): void
+    {
+        $account = $patient->patient_account_id ? PatientAccount::query()->find($patient->patient_account_id) : null;
+
+        if ($account && $this->isMuted($account, $event)) {
+            return;
+        }
+
+        $variables += ['name' => $patient->name];
+        $organizationId = (int) $patient->organization_id;
+        $channel = $this->paidChannel($organizationId);
+
+        if ($channel === null) {
+            // Nothing paid is set up yet, so email and push carry the message.
+        } elseif ($this->limits->canSendPaidMessage($organizationId)) {
+            $this->queue($organizationId, $channel, $event, $patient->mobile, $variables, $dedupeKey);
+        } else {
+            // Recorded so the owner can see why a patient was not told.
+            MessageLog::withoutTenancy()->create(['organization_id' => $organizationId, 'channel' => $channel, 'event' => $event, 'recipient_masked' => Mask::identifier($patient->mobile), 'status' => 'over_limit']);
+        }
+
+        if ($patient->email) {
+            $this->queue($organizationId, 'email', $event, $patient->email, $variables, $dedupeKey);
+        }
+
+        if ($account) {
+            $this->pushTo($account, $organizationId, $event, $variables, route('patient.home'), $dedupeKey);
+        }
+    }
+
+    /**
+     * @param  array<string, string|int>  $variables
+     */
+    public function notifyUser(User $user, ?int $organizationId, string $event, array $variables, string $url, ?string $dedupeKey = null): void
+    {
+        if (! $this->isMuted($user, $event)) {
+            $this->pushTo($user, $organizationId, $event, $variables + ['name' => $user->name], $url, $dedupeKey);
+        }
+    }
+
+    private function paidChannel(int $organizationId): ?string
+    {
+        if ($this->features->enabled($organizationId, 'whatsapp') && $this->whatsApp->forOrganization($organizationId) !== null) {
+            return 'whatsapp';
+        }
+
+        return match (config('cureplus.sms.driver')) {
+            'http' => blank(config('cureplus.sms.http.url')) ? null : 'sms',
+            default => app()->isProduction() ? null : 'sms',
+        };
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function mutedEvents(Model $subscriber): array
+    {
+        return NotificationPreference::query()
+            ->where('subscriber_type', PushSubscription::subscriberType($subscriber))
+            ->where('subscriber_id', $subscriber->getKey())
+            ->first()
+            ->muted_events ?? [];
+    }
+
+    private function isMuted(Model $subscriber, string $event): bool
+    {
+        return in_array($event, $this->mutedEvents($subscriber), true);
+    }
+
+    /**
+     * @param  array<string, string|int>  $variables
+     */
+    private function pushTo(Model $subscriber, ?int $organizationId, string $event, array $variables, string $url, ?string $dedupeKey): void
+    {
+        if (! $this->push->isConfigured()) {
+            return;
+        }
+
+        $subscriptions = PushSubscription::query()
+            ->where('subscriber_type', PushSubscription::subscriberType($subscriber))
+            ->where('subscriber_id', $subscriber->getKey())
+            ->get();
+
+        foreach ($subscriptions as $subscription) {
+            $this->queue($organizationId, 'push', $event, (string) $subscription->id, $variables + ['url' => $url], $dedupeKey ? "{$dedupeKey}:{$subscription->id}" : null);
+        }
+    }
+
+    /**
+     * @param  array<string, string|int>  $variables
+     */
+    private function queue(?int $organizationId, string $channel, string $event, string $to, array $variables, ?string $dedupeKey): void
+    {
+        try {
+            $log = MessageLog::withoutTenancy()->create([
+                'organization_id' => $organizationId,
+                'channel' => $channel,
+                'event' => $event,
+                'recipient_masked' => $channel === 'push' ? 'device' : Mask::identifier($to),
+                'status' => 'queued',
+                'dedupe_key' => $dedupeKey ? "{$dedupeKey}:{$channel}" : null,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            return;
+        }
+
+        // A message is never worth failing a payment or a booking over. The money was taken
+        // and the slot is held, so the failure is recorded and the work carries on.
+        try {
+            SendMessage::dispatch($log->id, $channel, $event, $to, $variables, $organizationId);
+        } catch (Throwable $exception) {
+            report($exception);
+            $log->forceFill(['status' => 'failed', 'error' => class_basename($exception)])->save();
+        }
+    }
+}
