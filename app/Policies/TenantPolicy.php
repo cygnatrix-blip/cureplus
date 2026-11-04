@@ -15,6 +15,11 @@ abstract class TenantPolicy
 {
     public function __construct(protected readonly TenantContext $tenant) {}
 
+    protected function organizationIsApproved(): bool
+    {
+        return $this->tenant->organization()?->isActive() ?? false;
+    }
+
     protected function allows(User $user, string $permission, ?Model $record = null): bool
     {
         if ($record !== null && (int) $record->getAttribute('organization_id') !== $this->tenant->id()) {

@@ -1,9 +1,9 @@
 <x-layouts.admin title="Reports">
     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <x-stat label="Monthly recurring revenue" :value="$money::format($mrr)" />
+        @if (config('plans.enabled'))<x-stat label="Monthly recurring revenue" :value="$money::format($mrr)" />@endif
         <x-stat label="Active organizations" :value="$activeOrganizations" />
-        <x-stat label="Churn, last 30 days" :value="$churn['rate'].'%'" />
-        <x-stat label="Cancelled, last 30 days" :value="$churn['cancelled']" />
+        @if (config('plans.enabled'))<x-stat label="Churn, last 30 days" :value="$churn['rate'].'%'" />
+        <x-stat label="Cancelled, last 30 days" :value="$churn['cancelled']" />@endif
     </div>
     <div class="mt-4 grid gap-4 lg:grid-cols-2">
         <section class="card">

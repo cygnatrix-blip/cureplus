@@ -9,8 +9,10 @@ use App\Support\BrandTheme;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * How a clinic's patient pages look. The layout and flow stay the same for everyone;
@@ -26,7 +28,23 @@ class DesignController extends Controller
             'organization' => $this->tenant->organization(),
             'presets' => BrandTheme::PRESETS,
             'corners' => array_keys(BrandTheme::CORNERS),
+            'canReadJpeg' => function_exists('imagecreatefromjpeg'),
         ]);
+    }
+
+    /**
+     * The practice's own images for its own pages. The public route only serves approved
+     * practices, so without this a practice could not see the logo it had just uploaded.
+     */
+    public function image(string $kind): Response
+    {
+        $organization = $this->tenant->organization();
+        $path = $kind === 'logo' ? $organization->icon_192_path : $organization->cover_image_path;
+        $disk = Storage::disk(config('filesystems.default'));
+
+        abort_unless($path !== null && $disk->exists($path), 404);
+
+        return response((string) $disk->get($path), 200, ['Content-Type' => str_ends_with($path, '.png') ? 'image/png' : 'image/jpeg']);
     }
 
     public function update(Request $request, BrandingService $branding, AuditLogger $audit): RedirectResponse
@@ -49,6 +67,10 @@ class DesignController extends Controller
         ], [
             'brand_color.regex' => 'Use a colour like #088575.',
             'accent_color.regex' => 'Use a colour like #f59e0b.',
+            'logo.uploaded' => 'This file is too large for the server to accept. Please choose a smaller one.',
+            'cover.uploaded' => 'This file is too large for the server to accept. Please choose a smaller one.',
+            'logo.mimes' => 'Please use a PNG or JPG image.',
+            'cover.mimes' => 'Please use a PNG or JPG image.',
         ]);
 
         $organization = $this->tenant->organization();

@@ -1,8 +1,9 @@
 <x-layouts.app title="Dashboard">
     <x-page-header :title="$scopeLabel" :subtitle="now()->format('l, d M Y')">
-        @can('patients.manage')<a class="btn btn-secondary" href="{{ route('app.patients.create') }}">New patient</a>@endcan
+        @can('create', \App\Models\Patient::class)<a class="btn btn-secondary" href="{{ route('app.patients.create') }}">New patient</a>@endcan
         @can('appointments.manage')<a class="btn btn-primary" href="{{ route('app.appointments.create') }}">Book</a>@endcan
     </x-page-header>
+    @include('partials.setup-checklist')
     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         @if ($canSeeAppointments)
             <x-stat label="Appointments" :value="$appointmentsToday" />

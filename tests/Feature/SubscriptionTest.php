@@ -34,6 +34,7 @@ class SubscriptionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        config(['plans.enabled' => true]);
         Mail::fake();
         $this->seed(PlanSeeder::class);
         config(['plans.razorpay' => ['key_id' => 'rzp_plat', 'key_secret' => 'plat_secret', 'webhook_secret' => self::SECRET, 'subscription_cycles' => 12]]);
@@ -81,9 +82,10 @@ class SubscriptionTest extends TestCase
         ]];
     }
 
-    public function test_a_new_registration_starts_on_a_trial(): void
+    public function test_a_new_registration_starts_on_a_trial_when_approval_is_not_required(): void
     {
         Notification::fake();
+        config(['cureplus.organizations.require_approval' => false]);
 
         $this->post('/register', [
             'type' => 'solo_practice', 'name' => 'Rohan Roy', 'email' => 'r@example.test', 'mobile' => '9812345678',
@@ -103,7 +105,7 @@ class SubscriptionTest extends TestCase
         $this->travel(15)->days();
         $this->assertSame(['graced' => 1, 'suspended' => 0], $service->enforce());
         $this->assertSame('past_due', $subscription->fresh()->status);
-        $this->assertSame(OrganizationStatus::Active, $organization->fresh()->status);
+        $this->assertSame(OrganizationStatus::Approved, $organization->fresh()->status);
 
         $this->travel(config('plans.grace_days') + 1)->days();
         $this->assertSame(['graced' => 0, 'suspended' => 1], $service->enforce());
@@ -144,7 +146,7 @@ class SubscriptionTest extends TestCase
         $this->webhook($this->charged($unpaidSubscription->razorpay_subscription_id, 'pay_a'), 'evt_a');
         $this->webhook($this->charged($bannedSubscription->razorpay_subscription_id, 'pay_b'), 'evt_b');
 
-        $this->assertSame(OrganizationStatus::Active, $unpaid->fresh()->status);
+        $this->assertSame(OrganizationStatus::Approved, $unpaid->fresh()->status);
         $this->assertSame(OrganizationStatus::Suspended, $banned->fresh()->status);
     }
 

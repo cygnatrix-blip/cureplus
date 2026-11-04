@@ -21,7 +21,9 @@ class EnsureFeatureEnabled
         $organizationId = $this->tenant->id();
 
         if ($organizationId !== null && $request->routeIs(...$this->features->disabledRoutes($organizationId))) {
-            return redirect()->route('app.subscription.index')->with('error', 'Your plan does not include this feature.');
+            return config('plans.enabled')
+                ? redirect()->route('app.subscription.index')->with('error', 'Your plan does not include this feature.')
+                : redirect()->route('app.dashboard')->with('error', 'This feature is not switched on for your account. Please contact support.');
         }
 
         return $next($request);

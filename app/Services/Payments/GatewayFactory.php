@@ -3,6 +3,7 @@
 namespace App\Services\Payments;
 
 use App\Contracts\PaymentGateway;
+use App\Models\Organization;
 use App\Models\OrganizationIntegration;
 use App\Services\Billing\FeatureGate;
 
@@ -13,7 +14,7 @@ class GatewayFactory
      */
     public function forOrganization(int $organizationId): ?PaymentGateway
     {
-        if (! app(FeatureGate::class)->enabled($organizationId, 'online_payments')) {
+        if (! Organization::query()->find($organizationId)?->isActive() || ! app(FeatureGate::class)->enabled($organizationId, 'online_payments')) {
             return null;
         }
 

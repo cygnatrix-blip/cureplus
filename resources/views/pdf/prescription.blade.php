@@ -14,6 +14,7 @@
     </style>
 </head>
 <body>
+    @include('pdf.partials.logo', ['organizationId' => $prescription->organization_id])
     <h1>{{ $letterhead['title'] ?? $prescription->location->name }}</h1>
     <div class="muted">{{ $letterhead['subtitle'] ?? '' }} {{ $prescription->location->address_line }} {{ $prescription->location->city }} {{ $prescription->location->phone }}</div>
     <div class="rule"></div>

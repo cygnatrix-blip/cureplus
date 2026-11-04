@@ -9,7 +9,6 @@ use App\Models\Role;
 use App\Models\User;
 use App\Services\Rbac\PermissionResolver;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class AcceptInvitation
@@ -40,7 +39,7 @@ class AcceptInvitation
             $roleIds = Role::query()->whereIn('key', $invitation->role_keys)->pluck('id', 'key');
 
             if ($roleIds->has('doctor') && $membership->doctor_slug === null) {
-                $membership->doctor_slug = $this->uniqueDoctorSlug((int) $organizationId, $user->name);
+                $membership->doctor_slug = Membership::uniqueDoctorSlug((int) $organizationId, $user->name);
             }
 
             $membership->save();
@@ -58,18 +57,5 @@ class AcceptInvitation
 
             return $membership;
         });
-    }
-
-    private function uniqueDoctorSlug(int $organizationId, string $name): string
-    {
-        $base = Str::slug(Str::start(Str::lower($name), 'dr ')) ?: 'doctor';
-        $slug = $base;
-
-        for ($suffix = 2; Membership::withoutTenancy()->withTrashed()
-            ->where('organization_id', $organizationId)->where('doctor_slug', $slug)->exists(); $suffix++) {
-            $slug = "{$base}-{$suffix}";
-        }
-
-        return $slug;
     }
 }

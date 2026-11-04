@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\FeatureFlagController;
 use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\MedicineController;
 use App\Http\Controllers\Admin\MonitoringController;
+use App\Http\Controllers\Admin\OrganizationApprovalController;
 use App\Http\Controllers\Admin\OrganizationController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\PlatformAdminController;
@@ -48,10 +49,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::middleware('two-factor')->group(function () {
             Route::get('/', DashboardController::class)->name('dashboard');
 
+            Route::get('/approvals', [OrganizationApprovalController::class, 'index'])->can('platform.approvals.manage')->name('approvals.index');
+            Route::get('/approvals/{organization}', [OrganizationApprovalController::class, 'show'])->can('platform.approvals.manage')->name('approvals.show');
+            Route::get('/approvals/{organization}/documents/{document}', [OrganizationApprovalController::class, 'document'])->whereNumber('document')->can('platform.approvals.manage')->name('approvals.document');
+            Route::post('/approvals/{organization}/reject', [OrganizationApprovalController::class, 'reject'])->can('platform.approvals.manage')->name('approvals.reject');
+
             Route::get('/organizations', [OrganizationController::class, 'index'])->can('platform.organizations.view')->name('organizations.index');
             Route::get('/organizations/export', [OrganizationController::class, 'export'])->can('platform.organizations.view')->name('organizations.export');
             Route::get('/organizations/{organization}', [OrganizationController::class, 'show'])->can('platform.organizations.view')->name('organizations.show');
-            Route::post('/organizations/{organization}/approve', [OrganizationController::class, 'approve'])->can('platform.organizations.manage')->name('organizations.approve');
+            Route::post('/organizations/{organization}/approve', [OrganizationApprovalController::class, 'approve'])->can('platform.approvals.manage')->name('organizations.approve');
             Route::post('/organizations/{organization}/suspend', [OrganizationController::class, 'suspend'])->can('platform.organizations.manage')->name('organizations.suspend');
             Route::post('/organizations/{organization}/impersonate', [ImpersonationController::class, 'start'])->can('platform.impersonate')->name('organizations.impersonate');
 
@@ -98,11 +104,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/security/users/{user}/reset-2fa', [SecurityCenterController::class, 'resetTwoFactor'])->can('platform.security.manage')->name('security.reset-2fa');
             Route::post('/admins/{admin}/reset', [PlatformAdminController::class, 'resetPassword'])->can('platform.admins.manage')->name('admins.reset');
 
-            Route::get('/plans', [PlanController::class, 'index'])->can('platform.plans.manage')->name('plans.index');
-            Route::post('/plans', [PlanController::class, 'store'])->can('platform.plans.manage')->name('plans.store');
-            Route::put('/plans/{plan}', [PlanController::class, 'update'])->can('platform.plans.manage')->name('plans.update');
-            Route::post('/coupons', [PlanController::class, 'storeCoupon'])->can('platform.plans.manage')->name('coupons.store');
-            Route::post('/organizations/{organization}/plan', [ReportController::class, 'changePlan'])->can('platform.plans.manage')->name('subscriptions.change-plan');
+            Route::get('/plans', [PlanController::class, 'index'])->middleware('subscriptions.on')->can('platform.plans.manage')->name('plans.index');
+            Route::post('/plans', [PlanController::class, 'store'])->middleware('subscriptions.on')->can('platform.plans.manage')->name('plans.store');
+            Route::put('/plans/{plan}', [PlanController::class, 'update'])->middleware('subscriptions.on')->can('platform.plans.manage')->name('plans.update');
+            Route::post('/coupons', [PlanController::class, 'storeCoupon'])->middleware('subscriptions.on')->can('platform.plans.manage')->name('coupons.store');
+            Route::post('/organizations/{organization}/plan', [ReportController::class, 'changePlan'])->middleware('subscriptions.on')->can('platform.plans.manage')->name('subscriptions.change-plan');
 
             Route::get('/feature-flags', [FeatureFlagController::class, 'index'])->can('platform.flags.manage')->name('feature-flags.index');
             Route::post('/feature-flags', [FeatureFlagController::class, 'store'])->can('platform.flags.manage')->name('feature-flags.store');

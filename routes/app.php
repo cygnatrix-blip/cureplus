@@ -30,6 +30,7 @@ use App\Http\Controllers\App\StaffController;
 use App\Http\Controllers\App\SubscriptionController;
 use App\Http\Controllers\App\SupportTicketController;
 use App\Http\Controllers\App\SwitcherController;
+use App\Http\Controllers\App\VerificationController;
 use App\Http\Controllers\App\VisitController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
@@ -88,17 +89,17 @@ Route::prefix('app')->name('app.')->middleware(['auth:web', 'account.active', 'n
                 Route::post('/staff/{membership}/deactivate', [StaffController::class, 'deactivate'])->can('update', 'membership')->name('staff.deactivate');
                 Route::post('/staff/{membership}/activate', [StaffController::class, 'activate'])->can('update', 'membership')->name('staff.activate');
 
-                Route::post('/invitations', [InvitationController::class, 'store'])->can('staff.manage')->name('invitations.store');
+                Route::post('/invitations', [InvitationController::class, 'store'])->middleware('throttle:20,1')->can('staff.manage')->name('invitations.store');
                 Route::delete('/invitations/{invitation}', [InvitationController::class, 'destroy'])->can('staff.manage')->name('invitations.destroy');
 
                 Route::get('/roles', [RolePermissionController::class, 'index'])->can('roles.manage')->name('roles.index');
                 Route::put('/roles', [RolePermissionController::class, 'update'])->can('roles.manage')->name('roles.update');
 
                 Route::get('/patients', [PatientController::class, 'index'])->can('viewAny', Patient::class)->name('patients.index');
-                Route::get('/patients/export', [PatientController::class, 'export'])->can('viewAny', Patient::class)->name('patients.export');
+                Route::get('/patients/export', [PatientController::class, 'export'])->can('reports.view')->name('patients.export');
                 Route::get('/patients/search', [PatientController::class, 'search'])->can('viewAny', Patient::class)->name('patients.search');
-                Route::get('/patients/create', [PatientController::class, 'create'])->can('create', Patient::class)->name('patients.create');
-                Route::post('/patients', [PatientController::class, 'store'])->can('create', Patient::class)->name('patients.store');
+                Route::get('/patients/create', [PatientController::class, 'create'])->middleware('org.approved')->can('create', Patient::class)->name('patients.create');
+                Route::post('/patients', [PatientController::class, 'store'])->middleware('org.approved')->can('create', Patient::class)->name('patients.store');
                 Route::get('/patients/{patient}', [PatientController::class, 'show'])->can('view', 'patient')->name('patients.show');
                 Route::get('/patients/{patient}/edit', [PatientController::class, 'edit'])->can('update', 'patient')->name('patients.edit');
                 Route::put('/patients/{patient}', [PatientController::class, 'update'])->can('update', 'patient')->name('patients.update');
@@ -136,10 +137,10 @@ Route::prefix('app')->name('app.')->middleware(['auth:web', 'account.active', 'n
 
                 Route::get('/visits/{visit}/prescription', [PrescriptionController::class, 'edit'])->can('prescribe', 'visit')->name('prescriptions.edit');
                 Route::put('/visits/{visit}/prescription', [PrescriptionController::class, 'update'])->can('prescribe', 'visit')->name('prescriptions.update');
-                Route::get('/prescriptions/{prescription}', [PrescriptionController::class, 'show'])->can('view', 'prescription')->name('prescriptions.show');
-                Route::get('/prescriptions/{prescription}/pdf', [PrescriptionController::class, 'pdf'])->can('view', 'prescription')->name('prescriptions.pdf');
-                Route::post('/prescriptions/{prescription}/email', [PrescriptionController::class, 'email'])->can('view', 'prescription')->name('prescriptions.email');
-                Route::post('/prescriptions/{prescription}/share', [DocumentShareController::class, 'prescription'])->middleware('throttle:30,1')->can('view', 'prescription')->name('prescriptions.share');
+                Route::get('/prescriptions/{prescription}', [PrescriptionController::class, 'show'])->middleware('org.approved')->can('print', 'prescription')->name('prescriptions.show');
+                Route::get('/prescriptions/{prescription}/pdf', [PrescriptionController::class, 'pdf'])->middleware('org.approved')->can('print', 'prescription')->name('prescriptions.pdf');
+                Route::post('/prescriptions/{prescription}/email', [PrescriptionController::class, 'email'])->middleware('org.approved')->can('print', 'prescription')->name('prescriptions.email');
+                Route::post('/prescriptions/{prescription}/share', [DocumentShareController::class, 'prescription'])->middleware('throttle:30,1')->middleware('org.approved')->can('print', 'prescription')->name('prescriptions.share');
 
                 Route::get('/medicines', [MedicineController::class, 'index'])->can('prescriptions.manage')->name('medicines.index');
                 Route::get('/medicines/search', [PrescriptionController::class, 'searchMedicines'])->can('prescriptions.manage')->name('medicines.search');
@@ -149,15 +150,15 @@ Route::prefix('app')->name('app.')->middleware(['auth:web', 'account.active', 'n
 
                 Route::get('/invoices', [InvoiceController::class, 'index'])->can('viewAny', Invoice::class)->name('invoices.index');
                 Route::get('/invoices/export', [InvoiceController::class, 'export'])->can('viewAny', Invoice::class)->name('invoices.export');
-                Route::get('/invoices/create', [InvoiceController::class, 'create'])->can('create', Invoice::class)->name('invoices.create');
-                Route::get('/invoices/fee', [InvoiceController::class, 'fee'])->can('create', Invoice::class)->name('invoices.fee');
-                Route::post('/invoices', [InvoiceController::class, 'store'])->can('create', Invoice::class)->name('invoices.store');
+                Route::get('/invoices/create', [InvoiceController::class, 'create'])->middleware('org.approved')->can('create', Invoice::class)->name('invoices.create');
+                Route::get('/invoices/fee', [InvoiceController::class, 'fee'])->middleware('org.approved')->can('create', Invoice::class)->name('invoices.fee');
+                Route::post('/invoices', [InvoiceController::class, 'store'])->middleware('org.approved')->can('create', Invoice::class)->name('invoices.store');
                 Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->can('view', 'invoice')->name('invoices.show');
                 Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->can('view', 'invoice')->name('invoices.pdf');
                 Route::post('/invoices/{invoice}/email', [InvoiceController::class, 'email'])->can('view', 'invoice')->name('invoices.email');
-                Route::post('/invoices/{invoice}/share', [DocumentShareController::class, 'invoice'])->middleware('throttle:30,1')->can('view', 'invoice')->name('invoices.share');
-                Route::post('/invoices/{invoice}/pay', [InvoiceController::class, 'pay'])->can('update', 'invoice')->name('invoices.pay');
-                Route::post('/invoices/{invoice}/payment-link', [InvoiceController::class, 'paymentLink'])->can('update', 'invoice')->name('invoices.payment-link');
+                Route::post('/invoices/{invoice}/share', [DocumentShareController::class, 'invoice'])->middleware('throttle:30,1')->middleware('org.approved')->can('view', 'invoice')->name('invoices.share');
+                Route::post('/invoices/{invoice}/pay', [InvoiceController::class, 'pay'])->middleware('org.approved')->can('update', 'invoice')->name('invoices.pay');
+                Route::post('/invoices/{invoice}/payment-link', [InvoiceController::class, 'paymentLink'])->middleware('org.approved')->can('update', 'invoice')->name('invoices.payment-link');
                 Route::post('/invoices/{invoice}/refund', [InvoiceController::class, 'refund'])->can('refund', 'invoice')->name('invoices.refund');
                 Route::post('/invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])->can('refund', 'invoice')->name('invoices.cancel');
                 Route::get('/dues', DuesController::class)->can('viewAny', Invoice::class)->name('dues.index');
@@ -177,23 +178,32 @@ Route::prefix('app')->name('app.')->middleware(['auth:web', 'account.active', 'n
                 Route::get('/settings/organization', [OrganizationSettingsController::class, 'edit'])->can('settings.manage')->name('settings.organization');
                 Route::put('/settings/organization', [OrganizationSettingsController::class, 'update'])->can('settings.manage')->name('settings.organization.update');
 
+                Route::get('/verification', [VerificationController::class, 'index'])->can('settings.manage')->name('verification.index');
+                Route::post('/verification/registration', [VerificationController::class, 'saveRegistration'])->can('settings.manage')->name('verification.registration');
+                Route::post('/verification/documents', [VerificationController::class, 'storeDocument'])->middleware('throttle:30,1')->can('settings.manage')->name('verification.documents.store');
+                Route::get('/verification/documents/{document}', [VerificationController::class, 'showDocument'])->can('settings.manage')->name('verification.documents.show');
+                Route::delete('/verification/documents/{document}', [VerificationController::class, 'destroyDocument'])->can('settings.manage')->name('verification.documents.destroy');
+                Route::post('/verification/resubmit', [VerificationController::class, 'resubmit'])->can('settings.manage')->name('verification.resubmit');
+                Route::post('/verification/sample-data', [VerificationController::class, 'sampleData'])->can('settings.manage')->name('verification.sample-data');
+
+                Route::get('/settings/design/image/{kind}', [DesignController::class, 'image'])->whereIn('kind', ['logo', 'cover'])->can('settings.manage')->name('settings.design.image');
                 Route::get('/settings/design', [DesignController::class, 'edit'])->can('settings.manage')->name('settings.design');
                 Route::put('/settings/design', [DesignController::class, 'update'])->can('settings.manage')->name('settings.design.update');
 
                 Route::get('/booking-links', [BookingLinkController::class, 'index'])->can('settings.manage')->name('booking-links.index');
-                Route::get('/booking-links/qr', [BookingLinkController::class, 'download'])->can('settings.manage')->name('booking-links.download');
-                Route::get('/booking-links/poster', [BookingLinkController::class, 'poster'])->can('settings.manage')->name('booking-links.poster');
+                Route::get('/booking-links/qr', [BookingLinkController::class, 'download'])->middleware('org.approved')->can('settings.manage')->name('booking-links.download');
+                Route::get('/booking-links/poster', [BookingLinkController::class, 'poster'])->middleware('org.approved')->can('settings.manage')->name('booking-links.poster');
 
                 Route::get('/domains', [DomainController::class, 'index'])->can('settings.manage')->name('domains.index');
-                Route::post('/domains', [DomainController::class, 'store'])->middleware('throttle:20,1')->can('settings.manage')->name('domains.store');
+                Route::post('/domains', [DomainController::class, 'store'])->middleware('throttle:20,1')->middleware('org.approved')->can('settings.manage')->name('domains.store');
                 Route::post('/domains/{domain}/check', [DomainController::class, 'check'])->middleware('throttle:30,1')->can('settings.manage')->name('domains.check');
                 Route::delete('/domains/{domain}', [DomainController::class, 'destroy'])->can('settings.manage')->name('domains.destroy');
 
-                Route::get('/subscription', [SubscriptionController::class, 'index'])->can('subscription.manage')->name('subscription.index');
-                Route::post('/subscription/checkout', [SubscriptionController::class, 'checkout'])->can('subscription.manage')->name('subscription.checkout');
-                Route::post('/subscription/coupon', [SubscriptionController::class, 'applyCoupon'])->middleware('throttle:10,1')->can('subscription.manage')->name('subscription.coupon');
-                Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->can('subscription.manage')->name('subscription.cancel');
-                Route::get('/subscription/invoices/{platformInvoice}', [SubscriptionController::class, 'invoicePdf'])->can('subscription.manage')->name('subscription.invoice');
+                Route::get('/subscription', [SubscriptionController::class, 'index'])->middleware('subscriptions.on')->can('subscription.manage')->name('subscription.index');
+                Route::post('/subscription/checkout', [SubscriptionController::class, 'checkout'])->middleware('subscriptions.on')->can('subscription.manage')->name('subscription.checkout');
+                Route::post('/subscription/coupon', [SubscriptionController::class, 'applyCoupon'])->middleware('subscriptions.on')->middleware('throttle:10,1')->can('subscription.manage')->name('subscription.coupon');
+                Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->middleware('subscriptions.on')->can('subscription.manage')->name('subscription.cancel');
+                Route::get('/subscription/invoices/{platformInvoice}', [SubscriptionController::class, 'invoicePdf'])->middleware('subscriptions.on')->can('subscription.manage')->name('subscription.invoice');
 
                 Route::get('/support', [SupportTicketController::class, 'index'])->can('dashboard.view')->name('support.index');
                 Route::post('/support', [SupportTicketController::class, 'store'])->middleware('throttle:20,1')->can('dashboard.view')->name('support.store');
@@ -214,7 +224,7 @@ Route::prefix('app')->name('app.')->middleware(['auth:web', 'account.active', 'n
 
         // Outside the tenant group: these are where ResolveTenant sends people.
         Route::get('/no-organization', [SwitcherController::class, 'none'])->name('no-organization');
-        Route::post('/subscription/renew', [SubscriptionController::class, 'renew'])->middleware('not-impersonating')->name('subscription.renew');
+        Route::post('/subscription/renew', [SubscriptionController::class, 'renew'])->middleware('subscriptions.on')->middleware('not-impersonating')->name('subscription.renew');
         Route::get('/status', [SwitcherController::class, 'status'])->name('organization.status');
     });
 });

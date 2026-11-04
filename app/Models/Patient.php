@@ -33,6 +33,7 @@ class Patient extends Model
         return [
             'date_of_birth' => 'date',
             'dob_is_estimated' => 'boolean',
+            'is_demo' => 'boolean',
             'abha_id' => 'encrypted',
             'allergies' => 'encrypted',
         ];

@@ -81,6 +81,10 @@ class PrescriptionController extends Controller
 
         $prescription = $save($visit, ['items' => $validator->validated()['items']] + $data);
 
+        if (! app(TenantContext::class)->organization()?->isActive()) {
+            return back()->with('success', 'Prescription saved. Printing opens once your account is verified.');
+        }
+
         return redirect()->route('app.prescriptions.show', $prescription)->with('success', 'Prescription saved.');
     }
 

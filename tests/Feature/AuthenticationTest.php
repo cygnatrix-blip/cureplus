@@ -378,12 +378,12 @@ class AuthenticationTest extends TestCase
         $this->assertSame(0, app(UserSessions::class)->revokeAll($user));
     }
 
-    public function test_pending_organization_is_held_at_the_status_page(): void
+    public function test_a_pending_organization_can_sign_in_and_is_told_it_is_under_verification(): void
     {
         $organization = Organization::factory()->pending()->create();
         $owner = $this->addMember($organization, ['owner']);
 
-        $this->actingAs($owner, 'web')->get(route('app.dashboard'))->assertRedirect(route('app.organization.status'));
-        $this->get(route('app.organization.status'))->assertOk()->assertSee('being reviewed');
+        $this->actingAs($owner, 'web')->get(route('app.dashboard'))->assertOk()->assertSee('under verification');
+        $this->get(route('app.organization.status'))->assertRedirect(route('app.dashboard'));
     }
 }

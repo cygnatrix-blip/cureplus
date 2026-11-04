@@ -20,7 +20,7 @@ class RolePermissionController extends Controller
     {
         return view('app.roles.index', [
             'roles' => Role::query()->where('is_editable', true)->orderBy('id')->get(),
-            'permissions' => Permission::query()->orderBy('group_name')->orderBy('id')->get()->groupBy('group_name'),
+            'permissions' => Permission::query()->when(! config('plans.enabled'), fn ($query) => $query->where('key', '!=', 'subscription.manage'))->orderBy('group_name')->orderBy('id')->get()->groupBy('group_name'),
             'matrix' => $resolver->matrix((int) $tenant->id()),
         ]);
     }

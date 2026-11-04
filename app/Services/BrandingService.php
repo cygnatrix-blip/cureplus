@@ -96,7 +96,7 @@ class BrandingService
         }
 
         if ($image === false) {
-            throw ValidationException::withMessages([$field => 'This image could not be read. Please try a PNG file.']);
+            throw ValidationException::withMessages([$field => 'This image could not be read. Please try a different picture.']);
         }
 
         return $image;

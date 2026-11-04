@@ -192,6 +192,7 @@ class CustomDomainTest extends TestCase
 
     public function test_custom_domains_need_a_plan_that_includes_them(): void
     {
+        config(['plans.enabled' => true]);
         $this->seed(PlanSeeder::class);
         [$organization, $owner] = $this->organizationWithOwner();
         OrganizationSubscription::withoutTenancy()->create(['organization_id' => $organization->id, 'plan_id' => Plan::query()->where('code', 'starter')->value('id'), 'status' => 'active']);

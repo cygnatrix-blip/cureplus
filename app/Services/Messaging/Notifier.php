@@ -6,8 +6,10 @@ use App\Contracts\PushSender;
 use App\Jobs\SendMessage;
 use App\Models\MessageLog;
 use App\Models\NotificationPreference;
+use App\Models\Organization;
 use App\Models\Patient;
 use App\Models\PatientAccount;
+use App\Models\PlatformAdmin;
 use App\Models\PushSubscription;
 use App\Models\User;
 use App\Services\Billing\FeatureGate;
@@ -76,8 +78,42 @@ class Notifier
         }
     }
 
+    /**
+     * The platform writing to a practice owner about their account. It uses the platform's
+     * own sender, which is why it works before the practice itself is allowed to message.
+     *
+     * @param  array<string, string|int>  $variables
+     */
+    public function notifyAccountOwner(User $owner, string $event, array $variables): void
+    {
+        $variables += ['name' => $owner->name];
+
+        if ($owner->email) {
+            $this->queue(null, 'email', $event, $owner->email, $variables, null);
+        }
+
+        if ($owner->mobile && $this->whatsApp->forOrganization(null) !== null) {
+            $this->queue(null, 'whatsapp', $event, $owner->mobile, $variables, null);
+        }
+    }
+
+    /**
+     * @param  array<string, string|int>  $variables
+     */
+    public function notifyPlatformAdmins(string $event, array $variables): void
+    {
+        foreach (PlatformAdmin::query()->where('role', 'super_admin')->where('status', 'active')->get() as $admin) {
+            $this->queue(null, 'email', $event, (string) $admin->email, $variables, null);
+        }
+    }
+
     private function paidChannel(int $organizationId): ?string
     {
+        // A practice that is not approved, or is suspended, sends nothing paid to anyone.
+        if (! Organization::query()->find($organizationId)?->isActive()) {
+            return null;
+        }
+
         if ($this->features->enabled($organizationId, 'whatsapp') && $this->whatsApp->forOrganization($organizationId) !== null) {
             return 'whatsapp';
         }

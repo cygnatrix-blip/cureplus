@@ -45,6 +45,10 @@ class FeatureGate
             return $override->is_enabled;
         }
 
+        if (! config('plans.enabled')) {
+            return true;
+        }
+
         $plan = $this->planFor($organizationId);
 
         if ($plan === null) {

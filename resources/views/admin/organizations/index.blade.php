@@ -5,7 +5,7 @@
             <select class="input w-auto" name="status" data-auto-submit aria-label="Status">
                 <option value="">All statuses</option>
                 @foreach (\App\Enums\OrganizationStatus::cases() as $case)
-                    <option value="{{ $case->value }}" @selected($status === $case->value)>{{ ucfirst($case->value) }}</option>
+                    <option value="{{ $case->value }}" @selected($status === $case->value)>{{ $case->label() }}</option>
                 @endforeach
             </select>
         </form>

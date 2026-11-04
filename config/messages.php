@@ -66,6 +66,15 @@ return [
         ],
     ],
 
+    // From the platform to practices, sent with the platform's own sender. Not mutable: they concern the account itself.
+    'account_events' => [
+        'organization_signup' => ['whatsapp_template' => null, 'params' => [], 'text' => 'New signup: {clinic} ({type}) is waiting for approval.', 'subject' => 'New signup waiting for approval: {clinic}', 'push_title' => 'New signup'],
+        'organization_resubmitted' => ['whatsapp_template' => null, 'params' => [], 'text' => '{clinic} has fixed its details and is waiting for approval again.', 'subject' => 'Sent for review again: {clinic}', 'push_title' => 'Review again'],
+        'organization_approved' => ['whatsapp_template' => 'organization_approved', 'params' => ['name', 'clinic'], 'text' => 'Hi {name}, {clinic} is verified. You can now register patients and share your booking link.', 'subject' => '{clinic} is verified', 'push_title' => 'Account verified'],
+        'organization_rejected' => ['whatsapp_template' => 'organization_rejected', 'params' => ['name', 'clinic', 'reason'], 'text' => 'Hi {name}, we could not verify {clinic} yet. Reason: {reason}. Please sign in, fix this and send it again.', 'subject' => 'We could not verify {clinic} yet', 'push_title' => 'Verification needs attention'],
+        'organization_restored' => ['whatsapp_template' => 'organization_restored', 'params' => ['name', 'clinic'], 'text' => 'Hi {name}, access to {clinic} has been restored.', 'subject' => 'Access to {clinic} is restored', 'push_title' => 'Access restored'],
+    ],
+
     'staff_events' => [
         'announcement' => ['label' => 'Platform announcements', 'push_title' => 'Announcement', 'text' => '{title}: {body}'],
     ],

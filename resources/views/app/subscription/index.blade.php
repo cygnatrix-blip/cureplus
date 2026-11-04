@@ -14,7 +14,7 @@
                     <form method="POST" action="{{ route('app.subscription.cancel') }}" class="mt-3" data-confirm="Cancel your subscription at the end of this billing period?">@csrf<button class="btn btn-sm btn-secondary">Cancel subscription</button></form>
                 @endif
             @else
-                <p class="mt-2 text-sm text-slate-600">You are not on a plan.</p>
+                @if ($tenant->organization()?->isAwaitingApproval())<p class="mt-2 text-sm text-slate-600">Your account is under verification. Your free trial starts on the day you are approved.</p>@else<p class="mt-2 text-sm text-slate-600">Your free trial has not started yet. Please contact support.</p>@endif
             @endif
         </section>
         <section class="card card-body lg:col-span-2">
@@ -35,19 +35,19 @@
                 <h3 class="text-lg font-semibold text-slate-900">{{ $plan->name }}</h3>
                 <p class="text-2xl font-semibold">{{ $money::format($plan->price_paise) }}<span class="text-sm font-normal text-slate-500"> / {{ $plan->billing_interval }}</span></p>
                 <ul class="flex-1 text-sm text-slate-600">
-                    <li>{{ $plan->limits['doctors'] ?? 'Unlimited' }} doctors</li>
-                    <li>{{ $plan->limits['staff'] ?? 'Unlimited' }} team members</li>
-                    <li>{{ $plan->limits['locations'] ?? 'Unlimited' }} locations</li>
-                    <li>{{ $plan->limits['messages_per_month'] ?? 'Unlimited' }} messages a month</li>
+                    <li>{{ $plan->limits['doctors'] ?? 'Unlimited' }} {{ \Illuminate\Support\Str::plural('doctor', $plan->limits['doctors'] ?? 2) }}</li>
+                    <li>{{ $plan->limits['staff'] ?? 'Unlimited' }} {{ \Illuminate\Support\Str::plural('team member', $plan->limits['staff'] ?? 2) }}</li>
+                    <li>{{ $plan->limits['locations'] ?? 'Unlimited' }} {{ \Illuminate\Support\Str::plural('location', $plan->limits['locations'] ?? 2) }}</li>
+                    <li>{{ $plan->limits['messages_per_month'] ?? 'Unlimited' }} {{ \Illuminate\Support\Str::plural('message', $plan->limits['messages_per_month'] ?? 2) }} a month</li>
                 </ul>
-                <input class="input" name="coupon" placeholder="Coupon (optional)" aria-label="Coupon for {{ $plan->name }}">
+                <input type="hidden" name="coupon" value="{{ session('applied_coupon') }}">
                 <button class="btn btn-primary">Choose {{ $plan->name }}</button>
             </form>
         @endforeach
     </div>
     <form method="POST" action="{{ route('app.subscription.coupon') }}" class="card card-body mt-4 flex flex-wrap items-end gap-2">
         @csrf
-        <x-field name="code" label="Have a coupon for extra trial days?" />
+        <x-field name="code" label="Have a coupon?" />
         <button class="btn btn-secondary">Apply</button>
     </form>
     <section class="card mt-4">

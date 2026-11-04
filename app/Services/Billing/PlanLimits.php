@@ -27,6 +27,10 @@ class PlanLimits
 
     public function limit(int $organizationId, string $key): ?int
     {
+        if (! config('plans.enabled')) {
+            return null;
+        }
+
         $plan = OrganizationSubscription::withoutTenancy()->where('organization_id', $organizationId)->with('plan')->first()?->plan;
 
         return $plan?->limits[$key] ?? null;

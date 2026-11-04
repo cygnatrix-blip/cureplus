@@ -20,6 +20,13 @@ use Tests\TestCase;
 
 class PlatformAdminBusinessTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['plans.enabled' => true]);
+    }
+
     public function test_admin_pages_render_and_are_limited_by_role(): void
     {
         $this->seed(PlanSeeder::class);

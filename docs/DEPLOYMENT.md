@@ -94,9 +94,13 @@ In hPanel, go to Advanced, then Cron Jobs, and run this every minute:
 
 After two minutes, the admin dashboard's "Cron last ran" should say a minute ago or less, and `/health` should return 200.
 
-### 7. Set prices and plans
+### 7. Plans are switched off
 
-The seeded plans have placeholder prices. Set real ones in Super Admin, Plans and subscriptions. New organizations start a trial on the plan named by `DEFAULT_PLAN`.
+Subscriptions are off (`SUBSCRIPTIONS_ENABLED=false`), and charges are agreed with each practice directly. To switch them on later, set it to `true`, run `artisan config:cache`, then set real prices in Super Admin, Plans and subscriptions. Trials start on the approval date.
+
+### 8. Approving practices
+
+New practices appear under Super Admin, Pending approvals, and every super admin gets an email. Other admin roles cannot approve.
 
 ## Outside accounts
 
@@ -125,8 +129,11 @@ Create templates in Meta Business Manager with these exact names and body parame
 | `payment_received` | name, amount, clinic |
 | `payment_link` | name, amount, clinic, link |
 | `document_ready` | name, document, clinic, link |
+| `organization_approved` | name, clinic |
+| `organization_rejected` | name, clinic, reason |
+| `organization_restored` | name, clinic |
 
-Until a sender is configured, messages go by SMS if a gateway is set up. With neither, patients get email and push only.
+The last three go to practice owners and need the platform's own sender (`WHATSAPP_TOKEN` and `WHATSAPP_PHONE_NUMBER_ID`). Without it, owners get those by email only. Until a sender is configured, patient messages go by SMS if a gateway is set up. With neither, patients get email and push only.
 
 ### Web push
 
@@ -136,7 +143,7 @@ In Super Admin, Integrations, press "Generate web-push keys" and set a contact a
 
 There are two separate kinds of account:
 
-- **The platform's own**, for what organizations pay you. Save the keys in Integrations, and add the webhook URL shown there with the events `subscription.activated`, `subscription.charged`, `subscription.resumed`, `subscription.pending`, `subscription.halted`, `subscription.cancelled` and `subscription.completed`. Create a Razorpay plan for each paid plan and paste its ID into the plan.
+- **The platform's own**, for what organizations pay you. Save the keys in Integrations, and add the webhook URL shown there with the events `subscription.activated`, `subscription.charged`, `subscription.resumed`, `subscription.pending`, `subscription.halted`, `subscription.cancelled` and `subscription.completed`. Create a Razorpay plan for each paid plan and paste its ID into the plan. Only needed once subscriptions are switched on.
 - **Each organization's own**, for what patients pay them. Owners set this up in their portal, under Integrations.
 
 Run one payment, one refund and one subscription in test mode first. These flows are tested against simulated responses only.

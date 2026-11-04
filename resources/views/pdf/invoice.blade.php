@@ -14,6 +14,7 @@
     </style>
 </head>
 <body>
+    @include('pdf.partials.logo', ['organizationId' => $organization->id])
     <h1>{{ $organization->name }}</h1>
     <div class="muted">{{ $invoice->location->name }} {{ $invoice->location->address_line }} {{ $invoice->location->city }}</div>
     @if ($invoice->gstin_snapshot)<div class="muted">GSTIN: {{ $invoice->gstin_snapshot }}</div>@endif

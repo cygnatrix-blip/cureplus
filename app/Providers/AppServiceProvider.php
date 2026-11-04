@@ -24,6 +24,7 @@ use App\Session\TrackedDatabaseSessionHandler;
 use App\Tenancy\TenantContext;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Console\ServeCommand;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Events\MessageSent;
@@ -43,6 +44,10 @@ class AppServiceProvider extends ServiceProvider
     {
         // Scoped, so queue workers get a fresh context for every job.
         $this->app->scoped(TenantContext::class);
+
+        // artisan serve hides most settings from PHP. On Windows, without TEMP, PHP has nowhere
+        // to put an upload and every file upload fails before the app even runs. Local only.
+        ServeCommand::$passthroughVariables = [...ServeCommand::$passthroughVariables, 'TEMP', 'TMP', 'TMPDIR'];
         $this->app->scoped(FeatureGate::class);
 
         $this->app->bind(SmsProvider::class, fn () => match (config('cureplus.sms.driver')) {
@@ -127,6 +132,8 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('otp', fn (Request $request) => [
             Limit::perMinute(3)->by('otp|'.$request->ip().'|'.$request->input('email', $request->input('mobile'))),
             Limit::perHour(20)->by('otp-ip|'.$request->ip()),
+            // Rotating IPs must not be able to flood one person's inbox, or use up the daily sending limit.
+            Limit::perHour(10)->by('otp-target|'.hash('sha256', mb_strtolower((string) $request->input('email', $request->ip())))),
         ]);
         RateLimiter::for('otp-verify', fn (Request $request) => Limit::perMinute(10)->by('otp-verify|'.$request->ip()));
         RateLimiter::for('register', fn (Request $request) => Limit::perHour(10)->by('register|'.$request->ip()));

@@ -75,7 +75,7 @@ class PlatformReports
 
     public function activeOrganizations(): int
     {
-        return Organization::query()->where('status', OrganizationStatus::Active)->count();
+        return Organization::query()->where('status', OrganizationStatus::Approved)->count();
     }
 
     public function failedPayments(): int

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\OrganizationStatus;
 use App\Models\AuditLog;
 use App\Models\Organization;
+use App\Models\OrganizationDocument;
 use App\Models\PlatformAdmin;
 use App\Models\SecurityEvent;
 use App\Models\User;
@@ -16,10 +17,11 @@ class AdminPortalTest extends TestCase
     public function test_approve_and_suspend_with_a_reason_are_audited(): void
     {
         $organization = Organization::factory()->pending()->create();
+        OrganizationDocument::factory()->create(['organization_id' => $organization->id]);
         $this->actingAs($this->superAdmin(), 'platform');
 
         $this->post(route('admin.organizations.approve', $organization))->assertRedirect();
-        $this->assertSame(OrganizationStatus::Active, $organization->fresh()->status);
+        $this->assertSame(OrganizationStatus::Approved, $organization->fresh()->status);
 
         $this->post(route('admin.organizations.suspend', $organization), [])->assertSessionHasErrors('reason');
         $this->post(route('admin.organizations.suspend', $organization), ['reason' => 'Non-payment'])->assertRedirect();
@@ -35,7 +37,7 @@ class AdminPortalTest extends TestCase
         $this->actingAs($this->superAdmin(), 'platform');
 
         $this->get(route('admin.organizations.index', ['q' => 'Alpha']))->assertOk()->assertSee('Alpha Clinic')->assertDontSee('Beta Clinic');
-        $this->get(route('admin.organizations.index', ['status' => 'pending']))->assertOk()->assertSee('Beta Clinic')->assertDontSee('Alpha Clinic');
+        $this->get(route('admin.organizations.index', ['status' => 'pending_verification']))->assertOk()->assertSee('Beta Clinic')->assertDontSee('Alpha Clinic');
 
         $export = $this->get(route('admin.organizations.export'));
         $export->assertOk();

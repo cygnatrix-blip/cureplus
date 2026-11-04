@@ -203,7 +203,74 @@ const shade = (hex, amount) => {
     return `#${value(1)}${value(3)}${value(5)}`;
 };
 
+/**
+ * Redraws the chosen picture in the browser and puts the result back in the file input.
+ * Phone photos are large, and some servers cannot read JPG: what is uploaded is always a
+ * small PNG or JPG the server accepts. The server still checks and re-encodes it.
+ */
+const shrinkForUpload = async (input, maxSide, type) => {
+    const file = input.files[0];
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    const context = canvas.getContext('2d');
+
+    if (type === 'image/jpeg') {
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, type, 0.85));
+    const transfer = new DataTransfer();
+    transfer.items.add(new File([blob], type === 'image/jpeg' ? 'upload.jpg' : 'upload.png', { type }));
+    input.files = transfer.files;
+
+    return canvas.toDataURL(type, 0.85);
+};
+
 Alpine.data('brandDesigner', () => ({
+    logo: '',
+    cover: '',
+    preparing: false,
+    imageError: '',
+    canReadJpeg: false,
+    get hasLogo() {
+        return this.logo !== '';
+    },
+    get noLogo() {
+        return this.logo === '';
+    },
+    get hasCover() {
+        return this.cover !== '';
+    },
+    async prepareImage(input, maxSide, type, field) {
+        if (!input.files.length) {
+            return;
+        }
+
+        this.preparing = true;
+        this.imageError = '';
+
+        try {
+            this[field] = await shrinkForUpload(input, maxSide, type);
+        } catch {
+            input.value = '';
+            this.imageError = 'That file could not be opened as a picture. Please try a PNG or JPG.';
+        } finally {
+            this.preparing = false;
+        }
+    },
+    prepareLogo(event) {
+        return this.prepareImage(event.target, 512, 'image/png', 'logo');
+    },
+    prepareCover(event) {
+        return this.canReadJpeg
+            ? this.prepareImage(event.target, 1600, 'image/jpeg', 'cover')
+            : this.prepareImage(event.target, 900, 'image/png', 'cover');
+    },
     primary: '#088575',
     accent: '#f59e0b',
     tagline: '',
@@ -213,6 +280,9 @@ Alpine.data('brandDesigner', () => ({
         this.accent = this.$el.dataset.accent;
         this.tagline = this.$el.dataset.tagline;
         this.name = this.$el.dataset.name;
+        this.logo = this.$el.dataset.logo;
+        this.cover = this.$el.dataset.cover;
+        this.canReadJpeg = this.$el.dataset.canReadJpeg === '1';
         this.$nextTick(() => this.paint());
     },
     get initial() {

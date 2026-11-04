@@ -1,6 +1,9 @@
 <?php
 
 return [
+    // Off: no plan pages, limits, trial expiry or suspension. Charges are agreed with each practice directly.
+    'enabled' => (bool) env('SUBSCRIPTIONS_ENABLED', false),
+
     'default_plan' => env('DEFAULT_PLAN', 'starter'),
     'grace_days' => (int) env('SUBSCRIPTION_GRACE_DAYS', 7),
 

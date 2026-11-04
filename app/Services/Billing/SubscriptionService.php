@@ -22,6 +22,10 @@ class SubscriptionService
 
     public function startTrial(Organization $organization): ?OrganizationSubscription
     {
+        if (! config('plans.enabled')) {
+            return null;
+        }
+
         $plan = Plan::query()->where('code', config('plans.default_plan'))->where('is_active', true)->first();
 
         if ($plan === null) {
@@ -158,6 +162,10 @@ class SubscriptionService
      */
     public function enforce(): array
     {
+        if (! config('plans.enabled')) {
+            return ['graced' => 0, 'suspended' => 0];
+        }
+
         $graced = 0;
         $suspended = 0;
 
@@ -178,7 +186,7 @@ class SubscriptionService
         foreach ($overdue as $subscription) {
             $organization = Organization::query()->find($subscription->organization_id);
 
-            if ($organization?->status === OrganizationStatus::Active) {
+            if ($organization?->status === OrganizationStatus::Approved) {
                 $organization->forceFill(['status' => OrganizationStatus::Suspended, 'suspended_at' => now(), 'suspension_reason' => self::SUBSCRIPTION_SUSPENSION])->save();
                 $this->owners->email($organization->id, 'Your account has been suspended', 'Your subscription was not paid. Your records are safe. Sign in and renew to restore access.');
                 $suspended++;
@@ -197,7 +205,7 @@ class SubscriptionService
         $organization = Organization::query()->find($organizationId);
 
         if ($organization?->status === OrganizationStatus::Suspended && $organization->suspension_reason === self::SUBSCRIPTION_SUSPENSION) {
-            $organization->forceFill(['status' => OrganizationStatus::Active, 'suspended_at' => null, 'suspension_reason' => null])->save();
+            $organization->forceFill(['status' => OrganizationStatus::Approved, 'suspended_at' => null, 'suspension_reason' => null])->save();
         }
     }
 

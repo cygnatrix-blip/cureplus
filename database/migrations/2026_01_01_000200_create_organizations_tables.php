@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('logo_path')->nullable();
             $table->string('brand_color', 7)->nullable();
             $table->string('plan', 50)->nullable()->index();
-            $table->string('status', 20)->default('pending')->index();
+            $table->string('status', 20)->default('pending_verification')->index();
             $table->string('gstin', 15)->nullable();
             $table->json('settings')->nullable();
             $table->timestamp('approved_at')->nullable();

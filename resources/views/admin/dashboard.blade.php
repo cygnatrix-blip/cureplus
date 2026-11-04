@@ -5,7 +5,7 @@
         <x-stat label="Doctors" :value="$doctors" />
         <x-stat label="Signups this month" :value="$signupsThisMonth" />
         <x-stat label="Patients" :value="$patients" />
-        <x-stat label="Monthly recurring revenue" :value="\App\Support\Money::format($mrr)" />
+        @if (config('plans.enabled'))<x-stat label="Monthly recurring revenue" :value="\App\Support\Money::format($mrr)" />@endif
         <x-stat label="Failed payments" :value="$failedPayments" :tone="$failedPayments ? 'bad' : null" />
         <x-stat label="Open tickets" :value="$openTickets" :tone="$openTickets ? 'warn' : null" />
     </div>

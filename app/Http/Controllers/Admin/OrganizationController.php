@@ -41,18 +41,6 @@ class OrganizationController extends Controller
         ]);
     }
 
-    public function approve(Organization $organization): RedirectResponse
-    {
-        $organization->forceFill([
-            'status' => OrganizationStatus::Active,
-            'approved_at' => $organization->approved_at ?? now(),
-            'suspended_at' => null,
-            'suspension_reason' => null,
-        ])->save();
-
-        return back()->with('success', 'Organization is now active.');
-    }
-
     public function suspend(Request $request, Organization $organization): RedirectResponse
     {
         $data = $request->validate(['reason' => ['required', 'string', 'max:255']]);

@@ -10,12 +10,13 @@ use App\Models\Organization;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\Billing\SubscriptionService;
+use App\Services\OrganizationVerification;
 use App\Support\Mobile;
 use Illuminate\Support\Facades\DB;
 
 class RegisterOrganization
 {
-    public function __construct(private readonly GenerateOrganizationSlug $slugs, private readonly SubscriptionService $subscriptions) {}
+    public function __construct(private readonly GenerateOrganizationSlug $slugs, private readonly SubscriptionService $subscriptions, private readonly OrganizationVerification $verification) {}
 
     /**
      * Doctor: solo practice, Owner + Doctor roles, first chamber.
@@ -47,7 +48,7 @@ class RegisterOrganization
                 'slug' => $slug,
             ]);
             $organization->forceFill([
-                'status' => $requiresApproval ? OrganizationStatus::Pending : OrganizationStatus::Active,
+                'status' => $requiresApproval ? OrganizationStatus::PendingVerification : OrganizationStatus::Approved,
                 'approved_at' => $requiresApproval ? null : now(),
             ])->save();
 
@@ -68,7 +69,13 @@ class RegisterOrganization
                 Role::query()->whereIn('key', $isSolo ? ['owner', 'doctor'] : ['owner'])->pluck('id')
             );
             $membership->locations()->sync([$location->id]);
-            $this->subscriptions->startTrial($organization);
+
+            // With approval on, the trial waits for the approval date.
+            if ($requiresApproval) {
+                $this->verification->announceSignup($organization);
+            } else {
+                $this->subscriptions->startTrial($organization);
+            }
 
             return $user;
         });

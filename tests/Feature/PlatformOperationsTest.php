@@ -233,7 +233,7 @@ class PlatformOperationsTest extends TestCase
     {
         $response = $this->actingAs($this->superAdmin(), 'platform')->get(route('admin.dashboard'))->assertOk();
 
-        foreach (['Organizations', 'Doctors', 'Plans and subscriptions', 'Medicine catalogue', 'Templates', 'Custom domains', 'Reports', 'Support tickets', 'Announcements', 'Feature flags', 'Audit log', 'Security center', 'Backups', 'Integrations', 'API keys', 'System configuration', 'Monitoring', 'IT admins'] as $section) {
+        foreach (['Organizations', 'Doctors', 'Pending approvals', 'Medicine catalogue', 'Templates', 'Custom domains', 'Reports', 'Support tickets', 'Announcements', 'Feature flags', 'Audit log', 'Security center', 'Backups', 'Integrations', 'API keys', 'System configuration', 'Monitoring', 'IT admins'] as $section) {
             $response->assertSee($section);
         }
     }

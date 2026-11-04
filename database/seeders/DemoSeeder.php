@@ -133,7 +133,7 @@ class DemoSeeder extends Seeder
     {
         $organization = Organization::query()->firstOrNew(['slug' => $slug]);
         $organization->fill(['name' => $name, 'type' => $type]);
-        $organization->forceFill(['status' => OrganizationStatus::Active, 'approved_at' => now()])->save();
+        $organization->forceFill(['status' => OrganizationStatus::Approved, 'approved_at' => now()])->save();
 
         return $organization;
     }

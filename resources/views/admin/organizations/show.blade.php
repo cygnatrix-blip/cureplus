@@ -8,9 +8,13 @@
             <section class="card card-body space-y-3">
                 <h3 class="font-semibold text-slate-900">Status</h3>
                 @if ($organization->suspension_reason)<p class="text-sm text-slate-600">Suspended: {{ $organization->suspension_reason }}</p>@endif
-                @unless ($organization->isActive())
-                    <form method="POST" action="{{ route('admin.organizations.approve', $organization) }}">@csrf<button class="btn btn-primary">Approve and activate</button></form>
-                @endunless
+                @can('platform.approvals.manage')
+                    @if ($organization->isAwaitingApproval())
+                        <a class="btn btn-primary" href="{{ route('admin.approvals.show', $organization) }}">Review documents</a>
+                    @elseif ($organization->status === \App\Enums\OrganizationStatus::Suspended)
+                        <form method="POST" action="{{ route('admin.organizations.approve', $organization) }}">@csrf<button class="btn btn-primary">Restore access</button></form>
+                    @endif
+                @endcan
                 @if ($organization->status !== \App\Enums\OrganizationStatus::Suspended)
                     <form method="POST" action="{{ route('admin.organizations.suspend', $organization) }}" class="space-y-2" data-confirm="Suspend {{ $organization->name }}? Their staff lose access right away.">
                         @csrf

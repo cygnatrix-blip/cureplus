@@ -39,6 +39,11 @@ class InvitationController extends Controller
 
         $data['email'] = mb_strtolower($data['email']);
 
+        // Otherwise anyone with "Manage staff" could invite a friend, or themselves, as an owner.
+        if (in_array('owner', $data['role_keys'], true) && ! $tenant->membership()?->hasRole('owner')) {
+            throw ValidationException::withMessages(['role_keys' => 'Only an owner can add another owner.']);
+        }
+
         $alreadyMember = Membership::query()
             ->whereHas('user', fn ($q) => $q->where('email', $data['email']))
             ->exists();
@@ -47,9 +52,12 @@ class InvitationController extends Controller
             throw ValidationException::withMessages(['email' => 'This person is already on your staff list.']);
         }
 
+        // Only the newest link works, so an earlier one sent to the wrong person can be replaced.
+        Invitation::query()->where('email', $data['email'])->whereNull('accepted_at')->whereNull('revoked_at')->update(['revoked_at' => now()]);
+
         $invite($tenant->organization(), $request->user(), $data);
 
-        return back()->with('success', 'Invitation sent.');
+        return back()->with('success', "Invitation sent to {$data['email']}. The link works for ".config('cureplus.invitations.ttl_days').' days.');
     }
 
     public function destroy(Invitation $invitation): RedirectResponse

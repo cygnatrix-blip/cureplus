@@ -27,7 +27,7 @@ class PatientPolicy extends TenantPolicy
 
     public function create(User $user): bool
     {
-        return $this->allows($user, 'patients.manage');
+        return $this->organizationIsApproved() && $this->allows($user, 'patients.manage');
     }
 
     public function update(User $user, Patient $patient): bool

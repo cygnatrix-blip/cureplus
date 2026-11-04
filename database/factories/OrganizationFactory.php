@@ -27,7 +27,7 @@ class OrganizationFactory extends Factory
     public function configure(): static
     {
         return $this->afterMaking(function (Organization $organization): void {
-            $organization->status ??= OrganizationStatus::Active;
+            $organization->status ??= OrganizationStatus::Approved;
             $organization->approved_at ??= now();
         });
     }
@@ -35,7 +35,7 @@ class OrganizationFactory extends Factory
     public function pending(): static
     {
         return $this->afterMaking(function (Organization $organization): void {
-            $organization->status = OrganizationStatus::Pending;
+            $organization->status = OrganizationStatus::PendingVerification;
             $organization->approved_at = null;
         });
     }

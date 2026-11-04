@@ -14,6 +14,11 @@ return [
         'ipv6' => env('PLATFORM_IPV6', '2a02:4780:a:2211:0:2396:1cf1:7'),
     ],
 
+    // Suggestions on the verification form. A doctor can type another.
+    'medical_councils' => [
+        'National Medical Commission', 'Andhra Pradesh Medical Council', 'Arunachal Pradesh Medical Council', 'Assam Medical Council', 'Bihar Medical Council', 'Chhattisgarh Medical Council', 'Delhi Medical Council', 'Goa Medical Council', 'Gujarat Medical Council', 'Haryana Medical Council', 'Himachal Pradesh Medical Council', 'Jammu and Kashmir Medical Council', 'Jharkhand Medical Council', 'Karnataka Medical Council', 'Kerala (Travancore Cochin) Medical Council', 'Madhya Pradesh Medical Council', 'Maharashtra Medical Council', 'Manipur Medical Council', 'Meghalaya Medical Council', 'Mizoram Medical Council', 'Nagaland Medical Council', 'Odisha Council of Medical Registration', 'Punjab Medical Council', 'Rajasthan Medical Council', 'Sikkim Medical Council', 'Tamil Nadu Medical Council', 'Telangana State Medical Council', 'Tripura State Medical Council', 'Uttar Pradesh Medical Council', 'Uttarakhand Medical Council', 'West Bengal Medical Council',
+    ],
+
     'organizations' => [
         // New organizations wait for a platform admin unless this is switched off.
         'require_approval' => (bool) env('ORG_REQUIRE_APPROVAL', true),

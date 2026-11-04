@@ -78,13 +78,13 @@ class RegistrationTest extends TestCase
         Notification::fake();
 
         $this->post('/register', $this->payload());
-        $this->assertSame(OrganizationStatus::Pending, Organization::query()->firstOrFail()->status);
+        $this->assertSame(OrganizationStatus::PendingVerification, Organization::query()->firstOrFail()->status);
 
         config(['cureplus.organizations.require_approval' => false]);
         $this->post(route('app.logout'));
         $this->post('/register', $this->payload(['email' => 'two@example.test', 'mobile' => '9812345679']));
 
-        $this->assertSame(OrganizationStatus::Active, Organization::query()->latest('id')->firstOrFail()->status);
+        $this->assertSame(OrganizationStatus::Approved, Organization::query()->latest('id')->firstOrFail()->status);
     }
 
     public function test_one_mobile_or_email_is_one_person_whatever_the_format(): void

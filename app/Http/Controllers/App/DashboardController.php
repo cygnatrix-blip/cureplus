@@ -9,6 +9,7 @@ use App\Models\FollowUp;
 use App\Models\Location;
 use App\Models\Membership;
 use App\Services\Reports\ReportService;
+use App\Services\SetupChecklist;
 use App\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -17,7 +18,7 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request, TenantContext $tenant, ReportService $reports): View
+    public function __invoke(Request $request, TenantContext $tenant, ReportService $reports, SetupChecklist $checklist): View
     {
         $locationId = $tenant->location()?->id;
         $today = Appointment::query()->where('location_id', $locationId)->whereDate('scheduled_on', today());
@@ -47,6 +48,7 @@ class DashboardController extends Controller
             'locationCount' => Location::query()->active()->count(),
             'staffCount' => Membership::query()->active()->count(),
             'canManageStaff' => Gate::check('staff.manage'),
+            'setup' => Gate::check('settings.manage') ? $checklist->for($tenant->organization()) : [],
         ]);
     }
 }

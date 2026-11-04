@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\OrganizationStatus;
 use App\Models\Location;
 use App\Models\Membership;
 use App\Tenancy\TenantContext;
@@ -43,7 +44,7 @@ class ResolveTenant
         $organization = $membership->organization;
         $request->session()->put(self::SESSION_ORGANIZATION, $organization->id);
 
-        if (! $organization->isActive()) {
+        if ($organization->status === OrganizationStatus::Suspended) {
             return redirect()->route('app.organization.status');
         }
 

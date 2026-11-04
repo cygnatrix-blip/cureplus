@@ -19,8 +19,8 @@ class DashboardController extends Controller
     public function __invoke(PlatformReports $reports): View
     {
         return view('admin.dashboard', [
-            'activeOrganizations' => Organization::query()->where('status', OrganizationStatus::Active)->count(),
-            'pendingOrganizations' => Organization::query()->where('status', OrganizationStatus::Pending)->count(),
+            'activeOrganizations' => Organization::query()->where('status', OrganizationStatus::Approved)->count(),
+            'pendingOrganizations' => Organization::query()->where('status', OrganizationStatus::PendingVerification)->count(),
             'doctors' => Membership::withoutTenancy()->where('status', 'active')
                 ->whereHas('roles', fn ($q) => $q->where('key', 'doctor'))->distinct()->count('user_id'),
             'signupsThisMonth' => Organization::query()->where('created_at', '>=', now()->startOfMonth())->count(),

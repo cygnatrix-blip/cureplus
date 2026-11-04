@@ -1,0 +1,179 @@
+<?php
+
+namespace App\Services;
+
+use App\Enums\OrganizationStatus;
+use App\Exceptions\VerificationIncompleteException;
+use App\Models\DoctorProfile;
+use App\Models\Membership;
+use App\Models\Organization;
+use App\Models\OrganizationDocument;
+use App\Models\PlatformAdmin;
+use App\Services\Billing\SubscriptionService;
+use App\Services\Messaging\Notifier;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * The approval workflow: pending_verification, then approved or rejected, and a rejected
+ * practice can fix what was wrong and resubmit. Patients only ever reach approved ones.
+ */
+class OrganizationVerification
+{
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly SubscriptionService $subscriptions,
+        private readonly Notifier $notifier,
+        private readonly DemoPatients $demoPatients,
+    ) {}
+
+    /**
+     * What must be in place before a practice can be approved.
+     *
+     * @return list<array{key: string, label: string, done: bool}>
+     */
+    public function requirements(Organization $organization): array
+    {
+        $requirements = [];
+
+        foreach ($this->owners($organization) as $owner) {
+            if ($owner->hasRole('doctor')) {
+                $profile = DoctorProfile::query()->where('user_id', $owner->user_id)->first();
+                $requirements[] = [
+                    'key' => 'registration',
+                    'label' => 'Doctor registration number and medical council',
+                    'done' => $profile !== null && filled($profile->registration_number) && filled($profile->registration_council),
+                ];
+            }
+        }
+
+        if (! $organization->isSolo()) {
+            $requirements[] = [
+                'key' => 'clinic_proof',
+                'label' => 'Clinic proof document',
+                'done' => OrganizationDocument::withoutTenancy()->where('organization_id', $organization->id)->where('type', 'clinic_proof')->exists(),
+            ];
+        }
+
+        return $requirements;
+    }
+
+    public function isComplete(Organization $organization): bool
+    {
+        return collect($this->requirements($organization))->every(fn (array $requirement) => $requirement['done']);
+    }
+
+    /**
+     * Also lifts a suspension. Restoring a practice approved before is not a new
+     * approval, so it keeps its data and its trial, and needs no fresh documents.
+     *
+     * @throws VerificationIncompleteException
+     */
+    public function approve(Organization $organization, ?PlatformAdmin $admin): void
+    {
+        $isFirstApproval = $organization->approved_at === null;
+
+        if ($isFirstApproval && ! $this->isComplete($organization)) {
+            throw new VerificationIncompleteException('This practice has not sent everything needed yet.');
+        }
+
+        DB::transaction(function () use ($organization, $admin, $isFirstApproval): void {
+            if ($isFirstApproval) {
+                $this->demoPatients->purge($organization->id);
+                $this->markOwnerDoctorsVerified($organization, $admin);
+            }
+
+            $organization->forceFill([
+                'status' => OrganizationStatus::Approved,
+                'approved_at' => $organization->approved_at ?? now(),
+                'reviewed_by' => $admin?->id,
+                'rejection_reason' => null,
+                'rejected_at' => null,
+                'suspended_at' => null,
+                'suspension_reason' => null,
+            ])->save();
+
+            if ($isFirstApproval) {
+                // The trial runs from approval: time spent waiting for us is not the customer's.
+                $this->subscriptions->startTrial($organization);
+            }
+
+            $this->audit->record('organizations.approved', $organization, ['first_approval' => $isFirstApproval]);
+            $this->notifyOwners($organization, $isFirstApproval ? 'organization_approved' : 'organization_restored');
+        });
+    }
+
+    public function reject(Organization $organization, PlatformAdmin $admin, string $reason): void
+    {
+        DB::transaction(function () use ($organization, $admin, $reason): void {
+            $organization->forceFill([
+                'status' => OrganizationStatus::Rejected,
+                'rejection_reason' => $reason,
+                'rejected_at' => now(),
+                'reviewed_by' => $admin->id,
+            ])->save();
+
+            $this->audit->record('organizations.rejected', $organization, ['reason' => $reason]);
+            $this->notifyOwners($organization, 'organization_rejected', ['reason' => $reason]);
+        });
+    }
+
+    /**
+     * @throws VerificationIncompleteException
+     */
+    public function resubmit(Organization $organization): void
+    {
+        if (! $this->isComplete($organization)) {
+            throw new VerificationIncompleteException('Please complete every item on the list before sending it again.');
+        }
+
+        $organization->forceFill(['status' => OrganizationStatus::PendingVerification, 'resubmitted_at' => now()])->save();
+
+        $this->audit->record('organizations.resubmitted', $organization);
+        $this->notifier->notifyPlatformAdmins('organization_resubmitted', ['clinic' => $organization->name]);
+    }
+
+    public function announceSignup(Organization $organization): void
+    {
+        $this->notifier->notifyPlatformAdmins('organization_signup', ['clinic' => $organization->name, 'type' => $organization->type->label()]);
+    }
+
+    /**
+     * @return Collection<int, Membership>
+     */
+    private function owners(Organization $organization): Collection
+    {
+        return Membership::withoutTenancy()
+            ->where('organization_id', $organization->id)
+            ->where('status', 'active')
+            ->whereHas('roles', fn ($query) => $query->where('key', 'owner'))
+            ->with(['roles', 'user'])
+            ->get()
+            ->toBase();
+    }
+
+    /**
+     * Reviewing the owner's registration is what approval is, so the badge follows from it.
+     */
+    private function markOwnerDoctorsVerified(Organization $organization, ?PlatformAdmin $admin): void
+    {
+        foreach ($this->owners($organization) as $owner) {
+            if ($owner->hasRole('doctor')) {
+                DoctorProfile::query()->where('user_id', $owner->user_id)->whereNotNull('registration_number')->get()
+                    ->each(fn (DoctorProfile $profile) => $profile->forceFill(['verification_status' => 'verified', 'verified_at' => now(), 'verified_by' => $admin?->id])->save());
+            }
+        }
+    }
+
+    /**
+     * @param  array<string, string>  $variables
+     */
+    private function notifyOwners(Organization $organization, string $event, array $variables = []): void
+    {
+        foreach ($this->owners($organization) as $owner) {
+            if ($owner->user !== null) {
+                $this->notifier->notifyAccountOwner($owner->user, $event, $variables + ['clinic' => $organization->name]);
+            }
+        }
+    }
+}

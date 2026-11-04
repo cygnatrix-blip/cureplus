@@ -14,7 +14,7 @@
                     @foreach ($patients as $patient)
                         <tr>
                             <td class="font-mono text-xs">{{ $patient->patient_code }}</td>
-                            <td class="font-medium text-slate-900">{{ $patient->name }}</td>
+                            <td class="font-medium text-slate-900">{{ $patient->name }} @if ($patient->is_demo)<span class="badge badge-amber">Sample</span>@endif</td>
                             <td>{{ $patient->mobile }}</td>
                             <td>{{ $patient->ageInYears() }}</td>
                             <td>{{ ucfirst((string) $patient->gender) }}</td>

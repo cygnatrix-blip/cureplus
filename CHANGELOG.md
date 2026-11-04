@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Approval workflow, subscriptions off, audit fixes
+
+- Practices start as pending verification. They can sign in, upload documents, and set up branches, staff, fees and sample patients. Booking links, real patients, bills, prescription printing, online payments, SMS and WhatsApp stay closed until approval, enforced in middleware, policies and services.
+- Super Admin: Pending approvals with a count, document viewer, approve, and reject with a required reason. Decisions are audited, owners are told by email and WhatsApp, and rejected practices can fix and resubmit.
+- Subscriptions switched off with `SUBSCRIPTIONS_ENABLED=false`. When on, trials start at approval.
+- Fixed: logos and covers could not be seen by practices awaiting approval, and JPG uploads failed on PHP builds without JPEG support. Pictures are now shrunk in the browser and previewed straight away. Logos appear on prescriptions and bills.
+- Fixed: anyone with Manage staff could create or change owners.
+- Fixed: a staff member made a doctor got no booking link.
+- Hardened: sign-in code emails capped per address, patient export limited to reports access, invitation throttle.
+- Easier: dashboard setup checklist, grouped menus, Add a doctor with a guide.
+
 ### Email sign-in and patient design
 
 - Every sign-in and verification code now goes by email: patient login, staff code login, 2FA, booking, and cross-clinic consent. Mobile numbers remain for contact, password login and reminders. Invitations are by email only.

@@ -7,6 +7,8 @@ use App\Http\Middleware\BlockIps;
 use App\Http\Middleware\EnsureAccountActive;
 use App\Http\Middleware\EnsureContactVerified;
 use App\Http\Middleware\EnsureFeatureEnabled;
+use App\Http\Middleware\EnsureOrganizationApproved;
+use App\Http\Middleware\EnsureSubscriptionsEnabled;
 use App\Http\Middleware\EnsureTwoFactorEnrolled;
 use App\Http\Middleware\NoStore;
 use App\Http\Middleware\ResolveHost;
@@ -16,6 +18,7 @@ use App\Services\Metrics;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\PostTooLargeException;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Route;
@@ -43,6 +46,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'api.key' => AuthenticateApiKey::class,
             'contact.verified' => EnsureContactVerified::class,
             'feature' => EnsureFeatureEnabled::class,
+            'org.approved' => EnsureOrganizationApproved::class,
+            'subscriptions.on' => EnsureSubscriptionsEnabled::class,
             'no-store' => NoStore::class,
             'not-impersonating' => BlockDuringImpersonation::class,
             'tenant' => ResolveTenant::class,
@@ -79,6 +84,9 @@ return Application::configure(basePath: dirname(__DIR__))
         );
 
         $exceptions->report(fn (Throwable $exception) => Metrics::increment('errors'));
+
+        // A file bigger than the server allows never reaches validation, so answer it here.
+        $exceptions->render(fn (PostTooLargeException $exception, Request $request) => back()->with('error', 'That file is too large. Please choose a smaller one.'));
 
         $exceptions->render(fn (OtpDeliveryException $exception, Request $request) => back()->withInput()->with('error', __('We could not send the email. Please try again in a moment.')));
 

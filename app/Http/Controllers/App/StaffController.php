@@ -8,6 +8,8 @@ use App\Models\Location;
 use App\Models\Membership;
 use App\Models\Role;
 use App\Services\AuditLogger;
+use App\Tenancy\TenantContext;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -35,7 +37,7 @@ class StaffController extends Controller
             'invitations' => Invitation::query()
                 ->whereNull('accepted_at')->whereNull('revoked_at')->where('expires_at', '>', now())
                 ->latest('id')->limit(50)->get(),
-            'roles' => Role::query()->orderBy('id')->get(),
+            'roles' => $this->assignableRoles(),
             'locations' => Location::query()->active()->orderBy('name')->get(),
             'search' => $search,
             'status' => $status,
@@ -46,7 +48,7 @@ class StaffController extends Controller
     {
         return view('app.staff.edit', [
             'membership' => $membership->load(['user', 'roles', 'locations']),
-            'roles' => Role::query()->orderBy('id')->get(),
+            'roles' => $this->assignableRoles(),
             'locations' => Location::query()->active()->orderBy('name')->get(),
         ]);
     }
@@ -61,11 +63,22 @@ class StaffController extends Controller
             'locations.*' => ['integer', Rule::exists('locations', 'id')->where('organization_id', $membership->organization_id)],
         ]);
 
+        // A manager with "Manage staff" must not be able to create owners or change them.
+        if (! $this->actorIsOwner() && (in_array('owner', $data['roles'], true) || $membership->roles()->where('key', 'owner')->exists())) {
+            return back()->with('error', 'Only an owner can change an owner\'s access.');
+        }
+
         if ($membership->roles()->where('key', 'owner')->exists() && ! in_array('owner', $data['roles'], true) && $this->ownerCount() === 1) {
             return back()->with('error', 'An organization must keep at least one owner.');
         }
 
         $membership->roles()->sync(Role::query()->whereIn('key', $data['roles'])->pluck('id'));
+
+        if (in_array('doctor', $data['roles'], true) && $membership->doctor_slug === null) {
+            $membership->doctor_slug = Membership::uniqueDoctorSlug((int) $membership->organization_id, (string) $membership->user?->name);
+            $membership->save();
+        }
+
         $membership->locations()->sync($data['locations'] ?? []);
         app(AuditLogger::class)->record('memberships.access_changed', $membership, [
             'roles' => $data['roles'],
@@ -77,6 +90,10 @@ class StaffController extends Controller
 
     public function deactivate(Membership $membership): RedirectResponse
     {
+        if (! $this->actorIsOwner() && $membership->roles()->where('key', 'owner')->exists()) {
+            return back()->with('error', 'Only an owner can change an owner\'s access.');
+        }
+
         if ($membership->roles()->where('key', 'owner')->exists() && $this->ownerCount() === 1) {
             return back()->with('error', 'An organization must keep at least one owner.');
         }
@@ -91,6 +108,19 @@ class StaffController extends Controller
         $membership->update(['status' => 'active']);
 
         return back()->with('success', 'Access restored.');
+    }
+
+    private function actorIsOwner(): bool
+    {
+        return app(TenantContext::class)->membership()?->hasRole('owner') ?? false;
+    }
+
+    /**
+     * @return Collection<int, Role>
+     */
+    private function assignableRoles(): Collection
+    {
+        return Role::query()->when(! $this->actorIsOwner(), fn ($query) => $query->where('key', '!=', 'owner'))->orderBy('id')->get();
     }
 
     private function ownerCount(): int

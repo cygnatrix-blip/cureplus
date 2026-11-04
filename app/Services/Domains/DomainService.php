@@ -47,7 +47,7 @@ class DomainService
     public function activateIfHttpsWorks(CustomDomain $domain): bool
     {
         try {
-            $works = Http::timeout(10)->get("https://{$domain->hostname}/up")->successful();
+            $works = Http::timeout(10)->withoutRedirecting()->get("https://{$domain->hostname}/up")->successful();
         } catch (ConnectionException) {
             $works = false;
         }

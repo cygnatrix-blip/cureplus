@@ -2,29 +2,39 @@
 @php
     $organization = $tenant->organization();
     $solo = $organization?->isSolo() ?? false;
-    $nav = $organization ? array_filter([
-        ['Dashboard', 'app.dashboard', 'dashboard.view'],
-        ['Patients', 'app.patients.index', 'patients.view'],
-        ['Appointments', 'app.appointments.index', 'appointments.view'],
-        ['Queue', 'app.queue.index', 'appointments.view'],
-        ['Follow-ups', 'app.follow-ups.index', 'appointments.manage'],
-        ['Doctor calendar', 'app.calendar.index', 'appointments.manage'],
-        ['Medicines', 'app.medicines.index', 'prescriptions.manage'],
-        [$solo ? 'Chambers' : 'Branches', 'app.locations.index', 'locations.manage'],
-        ['Staff', 'app.staff.index', 'staff.manage'],
-        $solo ? null : ['Role permissions', 'app.roles.index', 'roles.manage'],
-        ['Billing', 'app.invoices.index', 'billing.view'],
-        ['Reports', 'app.reports.index', 'reports.view'],
-        ['Fees and services', 'app.billing-settings.index', 'settings.manage'],
-        ['Patient page design', 'app.settings.design', 'settings.manage'],
-        ['Booking links', 'app.booking-links.index', 'settings.manage'],
-        ['Organization', 'app.settings.organization', 'settings.manage'],
-        ['Custom domain', 'app.domains.index', 'settings.manage'],
-        ['Integrations', 'app.integrations.index', 'integrations.manage'],
-        ['Subscription', 'app.subscription.index', 'subscription.manage'],
-        ['Audit log', 'app.audit.index', 'audit.view'],
-        ['Support', 'app.support.index', 'dashboard.view'],
-    ]) : [];
+    $navGroups = $organization ? [
+        '' => [
+            $organization->isActive() ? null : ['Verification', 'app.verification.index', 'settings.manage'],
+            ['Dashboard', 'app.dashboard', 'dashboard.view'],
+            ['Patients', 'app.patients.index', 'patients.view'],
+            ['Appointments', 'app.appointments.index', 'appointments.view'],
+            ['Queue', 'app.queue.index', 'appointments.view'],
+            ['Follow-ups', 'app.follow-ups.index', 'appointments.manage'],
+            ['Doctor calendar', 'app.calendar.index', 'appointments.manage'],
+            ['Medicines', 'app.medicines.index', 'prescriptions.manage'],
+        ],
+        'Money' => [
+            ['Billing', 'app.invoices.index', 'billing.view'],
+            ['Reports', 'app.reports.index', 'reports.view'],
+            ['Fees and services', 'app.billing-settings.index', 'settings.manage'],
+        ],
+        'Your practice' => [
+            ['Staff and doctors', 'app.staff.index', 'staff.manage'],
+            [$solo ? 'Chambers' : 'Branches', 'app.locations.index', 'locations.manage'],
+            $solo ? null : ['Role permissions', 'app.roles.index', 'roles.manage'],
+            ['Patient page design', 'app.settings.design', 'settings.manage'],
+            ['Booking links', 'app.booking-links.index', 'settings.manage'],
+            ['Organization', 'app.settings.organization', 'settings.manage'],
+            ['Custom domain', 'app.domains.index', 'settings.manage'],
+            ['Integrations', 'app.integrations.index', 'integrations.manage'],
+            config('plans.enabled') ? ['Subscription', 'app.subscription.index', 'subscription.manage'] : null,
+            $organization->isActive() ? ['Verification', 'app.verification.index', 'settings.manage'] : null,
+        ],
+        'Help' => [
+            ['Audit log', 'app.audit.index', 'audit.view'],
+            ['Support', 'app.support.index', 'dashboard.view'],
+        ],
+    ] : [];
     $user = auth('web')->user();
     $impersonating = session()->has('impersonation.admin_id');
 @endphp
@@ -43,11 +53,14 @@
             </div>
         </div>
         <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4" aria-label="Main">
-            @foreach ($nav as [$label, $route, $permission])
-                @continue(\Illuminate\Support\Str::is($disabledRoutes, $route))
-                @can($permission)
-                    <a href="{{ route($route) }}" @class(['nav-link', 'active' => request()->routeIs($route, str_replace('.index', '.*', $route))])>{{ $label }}</a>
-                @endcan
+            @foreach ($navGroups as $heading => $items)
+                @php($visible = array_filter($items, fn ($item) => $item && ! \Illuminate\Support\Str::is($disabledRoutes, $item[1]) && \Illuminate\Support\Facades\Gate::check($item[2])))
+                @if ($visible)
+                    @if ($heading)<p class="px-3 pt-4 pb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">{{ $heading }}</p>@endif
+                    @foreach ($visible as [$label, $route, $permission])
+                        <a href="{{ route($route) }}" @class(['nav-link', 'active' => request()->routeIs($route, str_replace('.index', '.*', $route))])>{{ $label }}</a>
+                    @endforeach
+                @endif
             @endforeach
             <a href="{{ route('app.account') }}" @class(['nav-link', 'active' => request()->routeIs('app.account')])>My account</a>
         </nav>
@@ -63,6 +76,7 @@
         @endif
         <header class="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-slate-200 bg-white/90 px-3 backdrop-blur sm:px-5">
             <button type="button" class="btn btn-ghost px-2 lg:hidden" @click="toggle" aria-label="Open menu">&#9776;</button>
+            @if ($organization?->icon_192_path)<img src="{{ route('app.settings.design.image', 'logo') }}" alt="" class="h-9 w-9 flex-none rounded-lg object-contain">@endif
             <div class="min-w-0 flex-1">
                 <h1 class="truncate text-base font-semibold sm:text-lg">{{ $title }}</h1>
                 @if ($organization)
@@ -84,6 +98,7 @@
             </div>
         </header>
         <main class="mx-auto w-full max-w-7xl flex-1 px-3 py-4 sm:px-5 sm:py-6">
+            @if ($organization?->isAwaitingApproval())@include('partials.verification-banner', ['organization' => $organization])@endif
             @include('partials.flash')
             @include('partials.announcements')
             {{ $slot }}

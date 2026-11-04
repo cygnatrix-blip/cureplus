@@ -19,6 +19,10 @@ use Illuminate\Support\Carbon;
  * @property array<string, mixed>|null $settings
  * @property array<string, mixed>|null $branding
  * @property OrganizationStatus $status
+ * @property string|null $rejection_reason
+ * @property Carbon|null $rejected_at
+ * @property Carbon|null $resubmitted_at
+ * @property int|null $reviewed_by
  * @property Carbon|null $approved_at
  * @property Carbon|null $suspended_at
  */
@@ -34,6 +38,8 @@ class Organization extends Model
         return [
             'type' => OrganizationType::class,
             'status' => OrganizationStatus::class,
+            'rejected_at' => 'datetime',
+            'resubmitted_at' => 'datetime',
             'settings' => 'array',
             'branding' => 'array',
             'approved_at' => 'datetime',
@@ -56,9 +62,17 @@ class Organization extends Model
         return 'uuid';
     }
 
+    /**
+     * Pending and rejected practices can sign in and set up, but cannot reach real patients.
+     */
+    public function isAwaitingApproval(): bool
+    {
+        return in_array($this->status, [OrganizationStatus::PendingVerification, OrganizationStatus::Rejected], true);
+    }
+
     public function isActive(): bool
     {
-        return $this->status === OrganizationStatus::Active;
+        return $this->status === OrganizationStatus::Approved;
     }
 
     public function isSolo(): bool

@@ -47,7 +47,10 @@ class SubscriptionController extends Controller
         try {
             $days = $this->subscriptions->applyTrialCoupon($this->tenant->organization(), $data['code']);
         } catch (BillingException $exception) {
-            return back()->with('error', $exception->getMessage());
+            // Not a trial coupon: it may be a discount, which applies when a plan is chosen.
+            $request->session()->put('applied_coupon', $data['code']);
+
+            return back()->with('error', $exception->getMessage().' If it is a discount coupon, it will be tried when you choose a plan.');
         }
 
         return back()->with('success', "{$days} days were added to your trial.");

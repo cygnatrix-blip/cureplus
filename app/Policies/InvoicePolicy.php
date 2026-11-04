@@ -19,7 +19,7 @@ class InvoicePolicy extends TenantPolicy
 
     public function create(User $user): bool
     {
-        return $this->allows($user, 'billing.manage');
+        return $this->organizationIsApproved() && $this->allows($user, 'billing.manage');
     }
 
     public function update(User $user, Invoice $invoice): bool

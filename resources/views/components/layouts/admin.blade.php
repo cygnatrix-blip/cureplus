@@ -1,28 +1,40 @@
 @props(['title' => null])
 @php
     $admin = auth('platform')->user();
-    $nav = [
-        ['Dashboard', 'admin.dashboard', null],
-        ['Organizations', 'admin.organizations.index', 'platform.organizations.view'],
-        ['Doctors', 'admin.doctors.index', 'platform.doctors.manage'],
-        ['Plans and subscriptions', 'admin.plans.index', 'platform.plans.manage'],
-        ['Medicine catalogue', 'admin.medicines.index', 'platform.catalogue.manage'],
-        ['Templates', 'admin.templates.index', 'platform.content.manage'],
-        ['Custom domains', 'admin.domains.index', 'platform.domains.manage'],
-        ['Reports', 'admin.reports.index', 'platform.reports.view'],
-        ['Support tickets', 'admin.support.index', 'platform.support.manage'],
-        ['Announcements', 'admin.announcements.index', 'platform.content.manage'],
-        ['Feature flags', 'admin.feature-flags.index', 'platform.flags.manage'],
-        ['Data requests', 'admin.data-requests.index', 'platform.privacy.manage'],
-        ['Audit log', 'admin.audit.index', 'platform.audit.view'],
-        ['Security center', 'admin.security.index', 'platform.security.manage'],
-        ['Breach incidents', 'admin.breaches.index', 'platform.breaches.manage'],
-        ['Backups', 'admin.backups.index', 'platform.backups.manage'],
-        ['Integrations', 'admin.integrations.index', 'platform.integrations.manage'],
-        ['API keys', 'admin.api-keys.index', 'platform.api-keys.manage'],
-        ['System configuration', 'admin.system.index', 'platform.system.manage'],
-        ['Monitoring', 'admin.monitoring.index', 'platform.monitoring.view'],
-        ['IT admins', 'admin.admins.index', 'platform.admins.manage'],
+    $waiting = $admin?->can('platform.approvals.manage') ? \App\Models\Organization::query()->where('status', \App\Enums\OrganizationStatus::PendingVerification)->count() : 0;
+    $navGroups = [
+        '' => [
+            ['Dashboard', 'admin.dashboard', null],
+            ['Pending approvals', 'admin.approvals.index', 'platform.approvals.manage'],
+            ['Organizations', 'admin.organizations.index', 'platform.organizations.view'],
+            ['Doctors', 'admin.doctors.index', 'platform.doctors.manage'],
+        ],
+        'Business' => [
+            config('plans.enabled') ? ['Plans and subscriptions', 'admin.plans.index', 'platform.plans.manage'] : null,
+            ['Reports', 'admin.reports.index', 'platform.reports.view'],
+            ['Support tickets', 'admin.support.index', 'platform.support.manage'],
+            ['Announcements', 'admin.announcements.index', 'platform.content.manage'],
+        ],
+        'Content' => [
+            ['Medicine catalogue', 'admin.medicines.index', 'platform.catalogue.manage'],
+            ['Templates', 'admin.templates.index', 'platform.content.manage'],
+            ['Custom domains', 'admin.domains.index', 'platform.domains.manage'],
+            ['Feature flags', 'admin.feature-flags.index', 'platform.flags.manage'],
+        ],
+        'Security and privacy' => [
+            ['Data requests', 'admin.data-requests.index', 'platform.privacy.manage'],
+            ['Audit log', 'admin.audit.index', 'platform.audit.view'],
+            ['Security center', 'admin.security.index', 'platform.security.manage'],
+            ['Breach incidents', 'admin.breaches.index', 'platform.breaches.manage'],
+        ],
+        'System' => [
+            ['Backups', 'admin.backups.index', 'platform.backups.manage'],
+            ['Integrations', 'admin.integrations.index', 'platform.integrations.manage'],
+            ['API keys', 'admin.api-keys.index', 'platform.api-keys.manage'],
+            ['System configuration', 'admin.system.index', 'platform.system.manage'],
+            ['Monitoring', 'admin.monitoring.index', 'platform.monitoring.view'],
+            ['IT admins', 'admin.admins.index', 'platform.admins.manage'],
+        ],
     ];
 @endphp
 <!DOCTYPE html>
@@ -40,9 +52,16 @@
             </div>
         </div>
         <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4" aria-label="Main">
-            @foreach ($nav as [$label, $route, $ability])
-                @if (! $ability || $admin?->can($ability))
-                    <a href="{{ route($route) }}" @class(['nav-link', 'active' => request()->routeIs($route, str_replace('.index', '.*', $route))])>{{ $label }}</a>
+            @foreach ($navGroups as $heading => $items)
+                @php($visible = array_filter($items, fn ($item) => $item && (! $item[2] || $admin?->can($item[2]))))
+                @if ($visible)
+                    @if ($heading)<p class="px-3 pt-4 pb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">{{ $heading }}</p>@endif
+                    @foreach ($visible as [$label, $route, $ability])
+                        <a href="{{ route($route) }}" @class(['nav-link', 'active' => request()->routeIs($route, str_replace('.index', '.*', $route))])>
+                            {{ $label }}
+                            @if ($route === 'admin.approvals.index' && $waiting > 0)<span class="ml-auto rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-slate-950" aria-label="{{ $waiting }} waiting">{{ $waiting }}</span>@endif
+                        </a>
+                    @endforeach
                 @endif
             @endforeach
         </nav>

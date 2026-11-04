@@ -69,6 +69,7 @@ return [
     'platform_abilities' => [
         'platform.organizations.view',
         'platform.organizations.manage',
+        'platform.approvals.manage',
         'platform.impersonate',
         'platform.audit.view',
         'platform.security.manage',

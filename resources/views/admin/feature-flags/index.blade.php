@@ -13,13 +13,13 @@
                 <select class="input" id="is_enabled" name="is_enabled"><option value="1">On</option><option value="0">Off</option></select>
             </div>
             <x-field name="organization_slug" label="Organization link name" />
-            <x-field name="plan_code" label="or plan code" />
+            @if (config('plans.enabled'))<x-field name="plan_code" label="or plan code" />@endif
         </div>
         <button class="btn btn-primary">Save flag</button>
     </form>
     <section class="card mt-4">
         @if ($flags->isEmpty())
-            <x-empty title="No flags set" text="Plans decide everything for now." />
+            <x-empty title="No flags set" text="Every feature is on for every practice." />
         @else
             <div class="table-wrap"><table class="table">
                 <thead><tr><th>Feature</th><th>Applies to</th><th>Setting</th><th></th></tr></thead>

@@ -45,7 +45,7 @@ class SendMessage implements ShouldBeEncrypted, ShouldQueue
 
     public function handle(SmsProvider $sms, WhatsAppFactory $whatsApp, PushSender $push, OrganizationMail $mail): void
     {
-        $definition = config("messages.events.{$this->event}") ?? config("messages.staff_events.{$this->event}");
+        $definition = config("messages.events.{$this->event}") ?? config("messages.staff_events.{$this->event}") ?? config("messages.account_events.{$this->event}");
         $definition['text'] = app(MessageWording::class)->textFor($this->event, $definition['text']);
         $providerId = null;
         $status = 'sent';

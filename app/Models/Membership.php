@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class Membership extends Model
 {
@@ -73,5 +74,18 @@ class Membership extends Model
     public function canAccessLocation(int $locationId): bool
     {
         return $this->hasRole('owner') || $this->locations->contains('id', $locationId);
+    }
+
+    public static function uniqueDoctorSlug(int $organizationId, string $name): string
+    {
+        $base = Str::slug(Str::start(Str::lower($name), 'dr ')) ?: 'doctor';
+        $slug = $base;
+
+        for ($suffix = 2; self::withoutTenancy()->withTrashed()
+            ->where('organization_id', $organizationId)->where('doctor_slug', $slug)->exists(); $suffix++) {
+            $slug = "{$base}-{$suffix}";
+        }
+
+        return $slug;
     }
 }

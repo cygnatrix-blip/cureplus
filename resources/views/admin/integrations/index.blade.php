@@ -39,6 +39,7 @@
                     <x-field name="settings[push_private_key]" label="Private key" type="password" autocomplete="new-password" :placeholder="$secret('push.private_key')" />
                 </div>
             </section>
+            @if (config('plans.enabled'))
             <section class="card card-body space-y-3">
                 <h2 class="font-semibold text-slate-900">Platform Razorpay (subscriptions)</h2>
                 <p class="text-sm text-slate-600">Webhook URL: <span class="font-mono text-xs break-all">{{ route('webhooks.razorpay.platform') }}</span></p>
@@ -48,6 +49,7 @@
                     <x-field name="settings[razorpay_webhook_secret]" label="Webhook Secret" type="password" autocomplete="new-password" :placeholder="$secret('razorpay.webhook_secret')" />
                 </div>
             </section>
+            @endif
             <button class="btn btn-primary">Save all</button>
         </form>
         <section class="card card-body flex flex-wrap items-end gap-2">
