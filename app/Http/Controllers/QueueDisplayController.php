@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\Location;
+use App\Models\Organization;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 
@@ -65,6 +66,11 @@ class QueueDisplayController extends Controller
 
     private function location(string $token): Location
     {
-        return Location::withoutTenancy()->where('display_token', $token)->where('is_active', true)->firstOrFail();
+        $location = Location::withoutTenancy()->where('display_token', $token)->where('is_active', true)->firstOrFail();
+
+        // Suspended, or past its access date: the screen stops with everything else.
+        abort_unless(Organization::query()->find($location->organization_id)?->isActive(), 404);
+
+        return $location;
     }
 }

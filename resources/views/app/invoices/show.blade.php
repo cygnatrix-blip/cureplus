@@ -62,7 +62,7 @@
                         <button class="btn btn-primary w-full">Record payment</button>
                     </form>
                     @if ($onlineEnabled)
-                        <form method="POST" action="{{ route('app.invoices.payment-link', $invoice) }}">@csrf<button class="btn btn-secondary w-full">Send Razorpay payment link</button></form>
+                        <form method="POST" action="{{ route('app.invoices.payment-link', $invoice) }}">@csrf<button class="btn btn-secondary w-full">Send online payment link</button></form>
                     @endif
                 @endif
             @endcan

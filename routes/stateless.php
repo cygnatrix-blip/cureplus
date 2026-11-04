@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\BrandingController;
+use App\Http\Controllers\CashfreeWebhookController;
 use App\Http\Controllers\DocumentLinkController;
 use App\Http\Controllers\DomainApprovalController;
 use App\Http\Controllers\HealthController;
@@ -23,6 +24,8 @@ Route::get('/manifests/{portal}.webmanifest', [PwaController::class, 'manifest']
 // Registered first: "platform" must not be read as an organization's uuid.
 Route::post('/webhooks/razorpay/platform', PlatformWebhookController::class)->middleware('throttle:300,1')->name('webhooks.razorpay.platform');
 Route::post('/webhooks/razorpay/{organizationUuid}', [RazorpayWebhookController::class, 'handle'])->middleware('throttle:300,1')->name('webhooks.razorpay');
+Route::post('/webhooks/cashfree/{organizationUuid}', [CashfreeWebhookController::class, 'handle'])->middleware('throttle:300,1')->name('webhooks.cashfree');
+Route::get('/pay/return/cashfree/{organizationUuid}/{linkId}', [CashfreeWebhookController::class, 'returned'])->where('linkId', '[A-Za-z0-9_-]+')->middleware('throttle:60,1')->name('pay.return.cashfree');
 Route::get('/pay/callback/{organizationUuid}', [RazorpayWebhookController::class, 'callback'])->middleware('throttle:60,1')->name('pay.callback');
 
 Route::get('/brand/{slug}/manifest.webmanifest', [BrandingController::class, 'manifest'])->middleware('throttle:60,1')->name('brand.manifest');

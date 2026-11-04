@@ -175,6 +175,8 @@ Route::prefix('app')->name('app.')->middleware(['auth:web', 'account.active', 'n
                 Route::get('/integrations', [IntegrationController::class, 'index'])->can('integrations.manage')->name('integrations.index');
                 Route::post('/integrations/razorpay', [IntegrationController::class, 'saveRazorpay'])->can('integrations.manage')->name('integrations.razorpay');
                 Route::post('/integrations/razorpay/test', [IntegrationController::class, 'testRazorpay'])->can('integrations.manage')->name('integrations.razorpay.test');
+                Route::post('/integrations/cashfree', [IntegrationController::class, 'saveCashfree'])->can('integrations.manage')->name('integrations.cashfree');
+                Route::post('/integrations/cashfree/test', [IntegrationController::class, 'testCashfree'])->can('integrations.manage')->name('integrations.cashfree.test');
                 Route::post('/integrations/smtp', [IntegrationController::class, 'saveSmtp'])->can('integrations.manage')->name('integrations.smtp');
                 Route::post('/integrations/smtp/test', [IntegrationController::class, 'testSmtp'])->can('integrations.manage')->name('integrations.smtp.test');
                 Route::post('/integrations/whatsapp', [IntegrationController::class, 'saveWhatsapp'])->can('integrations.manage')->name('integrations.whatsapp');

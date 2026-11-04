@@ -100,6 +100,9 @@
         </header>
         <main class="mx-auto w-full max-w-7xl flex-1 px-3 py-4 sm:px-5 sm:py-6">
             @if ($organization?->isAwaitingApproval())@include('partials.verification-banner', ['organization' => $organization])@endif
+            @if ($organization?->accessEndsSoon())
+                <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-900" role="status">Your access ends on {{ $organization->access_until->format('d M Y') }}. Please contact us to renew so your work is not interrupted.</div>
+            @endif
             @include('partials.flash')
             @include('partials.announcements')
             {{ $slot }}

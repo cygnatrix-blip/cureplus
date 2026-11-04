@@ -44,7 +44,7 @@ class ResolveTenant
         $organization = $membership->organization;
         $request->session()->put(self::SESSION_ORGANIZATION, $organization->id);
 
-        if ($organization->status === OrganizationStatus::Suspended) {
+        if ($organization->status === OrganizationStatus::Suspended || $organization->accessHasEnded()) {
             return redirect()->route('app.organization.status');
         }
 

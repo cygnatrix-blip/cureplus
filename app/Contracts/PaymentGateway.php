@@ -3,15 +3,22 @@
 namespace App\Contracts;
 
 /**
- * Per-organization payment provider. Razorpay Route (linked accounts) or another
- * gateway can be added behind this without touching billing code.
+ * Per-organization payment provider. Razorpay and Cashfree sit behind this, and another
+ * gateway can be added without touching billing code.
  */
 interface PaymentGateway
 {
+    /**
+     * The word stored as the payment's mode and the integration's kind.
+     */
+    public function provider(): string;
+
+    public function supportsReconciliation(): bool;
+
     public function testConnection(): bool;
 
     /**
-     * @param  array{amount_paise: int, reference: string, description: string, name: string, mobile: string, callback_url: string}  $link
+     * @param  array{amount_paise: int, reference: string, description: string, name: string, mobile: string, email?: string|null, callback_url: string, notify_url?: string|null}  $link
      * @return array{id: string, url: string}
      */
     public function createPaymentLink(array $link): array;

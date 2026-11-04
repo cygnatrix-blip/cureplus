@@ -6,13 +6,16 @@
             @csrf
             <section class="card card-body space-y-3">
                 <h2 class="font-semibold text-slate-900">Email (SMTP)</h2>
+                @if (config('mail.default') !== 'smtp')
+                    <p class="rounded-lg bg-amber-50 p-3 text-sm text-amber-900" role="alert"><strong>Emails are not being sent.</strong> They are only written to a log file. Enter your details below and save, or set MAIL_MAILER=smtp in .env.</p>
+                @endif
                 <div class="grid gap-3 sm:grid-cols-2">
                     <x-field name="settings[mail_host]" label="Host" :value="$settings->get('mail.host', config('mail.mailers.smtp.host'))" />
                     <x-field name="settings[mail_port]" label="Port" type="number" :value="$settings->get('mail.port', (string) config('mail.mailers.smtp.port'))" />
-                    <x-field name="settings[mail_username]" label="Username" autocomplete="off" :value="$settings->get('mail.username')" />
-                    <x-field name="settings[mail_password]" label="App Password" type="password" autocomplete="new-password" :placeholder="$secret('mail.password')" />
-                    <x-field name="settings[mail_from_address]" label="From address" type="email" :value="$settings->get('mail.from_address')" />
-                    <x-field name="settings[mail_from_name]" label="From name" :value="$settings->get('mail.from_name')" />
+                    <x-field name="settings[mail_username]" label="Username" autocomplete="off" :value="$settings->get('mail.username', config('mail.mailers.smtp.username'))" />
+                    <x-field name="settings[mail_password]" label="App Password" type="password" autocomplete="new-password" :placeholder="$secret('mail.password') ?? (config('mail.mailers.smtp.password') ? 'Saved in .env' : null)" />
+                    <x-field name="settings[mail_from_address]" label="From address" type="email" :value="$settings->get('mail.from_address', config('mail.from.address'))" />
+                    <x-field name="settings[mail_from_name]" label="From name" :value="$settings->get('mail.from_name', config('mail.from.name'))" />
                 </div>
             </section>
             <section class="card card-body space-y-3">

@@ -59,6 +59,11 @@ class PlatformSettings
             }
         }
 
+        // Saved details must take effect: otherwise a site in log mode keeps writing email to a file.
+        if (! empty($values['mail.host']) && ! empty($values['mail.username'])) {
+            config(['mail.default' => 'smtp']);
+        }
+
         if (! empty($values['security.two_factor_all_staff'])) {
             config(['cureplus.security.two_factor_roles' => array_keys(config('rbac.roles'))]);
         }

@@ -1,6 +1,6 @@
-@props(['name', 'label', 'type' => 'text', 'value' => null, 'hint' => null])
+@props(['name', 'label', 'type' => 'text', 'value' => null, 'hint' => null, 'fieldId' => null])
 @php($key = str_replace(['[', ']'], ['.', ''], $name))
-@php($id = str_replace('.', '_', $key))
+@php($id = $fieldId ?? str_replace('.', '_', $key))
 <div>
     <label for="{{ $id }}" class="label">{{ $label }}</label>
     <input id="{{ $id }}" name="{{ $name }}" type="{{ $type }}"

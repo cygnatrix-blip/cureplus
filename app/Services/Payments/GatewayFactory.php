@@ -9,6 +9,9 @@ use App\Services\Billing\FeatureGate;
 
 class GatewayFactory
 {
+    /** A practice uses one at a time. */
+    public const KINDS = ['razorpay', 'cashfree'];
+
     /**
      * Null when the organization has not switched online payments on.
      */
@@ -20,7 +23,7 @@ class GatewayFactory
 
         $integration = OrganizationIntegration::withoutTenancy()
             ->where('organization_id', $organizationId)
-            ->where('kind', 'razorpay')
+            ->whereIn('kind', self::KINDS)
             ->where('is_enabled', true)
             ->first();
 
@@ -28,13 +31,14 @@ class GatewayFactory
     }
 
     /**
-     * Webhooks must still verify after a temporary switch-off, so this ignores is_enabled.
+     * Webhooks and refunds must still work after a switch-off or a change of provider,
+     * so this ignores is_enabled and is asked for one provider by name.
      */
-    public function forWebhook(int $organizationId): ?PaymentGateway
+    public function forWebhook(int $organizationId, string $kind = 'razorpay'): ?PaymentGateway
     {
         $integration = OrganizationIntegration::withoutTenancy()
             ->where('organization_id', $organizationId)
-            ->where('kind', 'razorpay')
+            ->where('kind', $kind)
             ->first();
 
         return $integration ? $this->make($integration) : null;
@@ -42,6 +46,14 @@ class GatewayFactory
 
     public function make(OrganizationIntegration $integration): PaymentGateway
     {
+        if ($integration->kind === 'cashfree') {
+            return new CashfreeGateway(
+                (string) ($integration->config['key_id'] ?? ''),
+                (string) ($integration->config['key_secret'] ?? ''),
+                (string) ($integration->config['mode'] ?? 'test'),
+            );
+        }
+
         return new RazorpayGateway(
             (string) ($integration->config['key_id'] ?? ''),
             (string) ($integration->config['key_secret'] ?? ''),

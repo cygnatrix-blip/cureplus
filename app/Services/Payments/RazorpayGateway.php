@@ -16,6 +16,16 @@ class RazorpayGateway implements PaymentGateway
         #[\SensitiveParameter] private readonly string $webhookSecret,
     ) {}
 
+    public function provider(): string
+    {
+        return 'razorpay';
+    }
+
+    public function supportsReconciliation(): bool
+    {
+        return true;
+    }
+
     public function testConnection(): bool
     {
         return $this->client()->get('/payments', ['count' => 1])->successful();

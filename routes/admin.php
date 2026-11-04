@@ -52,6 +52,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/approvals', [OrganizationApprovalController::class, 'index'])->can('platform.approvals.manage')->name('approvals.index');
             Route::get('/approvals/{organization}', [OrganizationApprovalController::class, 'show'])->can('platform.approvals.manage')->name('approvals.show');
             Route::get('/approvals/{organization}/documents/{document}', [OrganizationApprovalController::class, 'document'])->whereNumber('document')->can('platform.approvals.manage')->name('approvals.document');
+            Route::post('/organizations/{organization}/access', [OrganizationApprovalController::class, 'access'])->can('platform.approvals.manage')->name('organizations.access');
             Route::post('/approvals/{organization}/reject', [OrganizationApprovalController::class, 'reject'])->can('platform.approvals.manage')->name('approvals.reject');
 
             Route::get('/organizations', [OrganizationController::class, 'index'])->can('platform.organizations.view')->name('organizations.index');

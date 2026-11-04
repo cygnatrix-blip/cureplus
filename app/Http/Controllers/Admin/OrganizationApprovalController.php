@@ -15,6 +15,8 @@ use App\Services\DoctorVerification;
 use App\Services\OrganizationVerification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -65,13 +67,37 @@ class OrganizationApprovalController extends Controller
 
     public function approve(Request $request, Organization $organization): RedirectResponse
     {
+        $data = $request->validate(['access_until' => ['nullable', 'date', 'after_or_equal:today']], [
+            'access_until.after_or_equal' => 'Choose today or a later date.',
+        ]);
+
         try {
-            $this->verification->approve($organization, $request->user('platform'));
+            $this->verification->approve($organization, $request->user('platform'), $data['access_until'] ?? null);
         } catch (VerificationIncompleteException $exception) {
             return back()->with('error', $exception->getMessage());
         }
 
         return redirect()->route('admin.approvals.index')->with('success', "{$organization->name} is approved. The owner has been told.");
+    }
+
+    public function access(Request $request, Organization $organization): RedirectResponse
+    {
+        $data = $request->validate([
+            'access_until' => ['nullable', 'date'],
+            'months' => ['nullable', 'integer', Rule::in([1, 3, 6, 12])],
+        ]);
+
+        $accessUntil = $data['access_until'] ?? null;
+
+        if (filled($data['months'] ?? null)) {
+            // Days already paid for are kept, and a lapsed practice restarts from today.
+            $start = $organization->access_until !== null && $organization->access_until->isFuture() ? $organization->access_until : today();
+            $accessUntil = $start->copy()->addMonthsNoOverflow((int) $data['months'])->toDateString();
+        }
+
+        $this->verification->changeAccess($organization, $accessUntil);
+
+        return back()->with('success', $accessUntil ? 'Access now runs until '.Carbon::parse($accessUntil)->format('d M Y').'.' : 'Access now has no end date.');
     }
 
     public function reject(Request $request, Organization $organization): RedirectResponse

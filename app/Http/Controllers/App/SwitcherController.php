@@ -61,7 +61,7 @@ class SwitcherController extends Controller
             ->where('organization_id', $request->session()->get(ResolveTenant::SESSION_ORGANIZATION))
             ->with('organization')->first()?->organization;
 
-        if ($organization === null || $organization->status !== OrganizationStatus::Suspended) {
+        if ($organization === null || ($organization->status !== OrganizationStatus::Suspended && ! $organization->accessHasEnded())) {
             return redirect()->route('app.dashboard');
         }
 

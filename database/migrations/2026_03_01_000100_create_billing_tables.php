@@ -100,7 +100,7 @@ return new class extends Migration
             $table->string('gateway_link_id', 60)->nullable();
             $table->string('gateway_link_url')->nullable();
             // Unique with the organization: a repeated webhook cannot credit an invoice twice.
-            $table->string('gateway_payment_id', 60)->nullable();
+            $table->string('gateway_payment_id', 100)->nullable();
             $table->dateTime('paid_at')->nullable();
             $table->foreignId('recorded_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();

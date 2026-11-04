@@ -11,6 +11,7 @@ use App\Models\OrganizationDocument;
 use App\Models\PlatformAdmin;
 use App\Services\Billing\SubscriptionService;
 use App\Services\Messaging\Notifier;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -69,7 +70,7 @@ class OrganizationVerification
      *
      * @throws VerificationIncompleteException
      */
-    public function approve(Organization $organization, ?PlatformAdmin $admin): void
+    public function approve(Organization $organization, ?PlatformAdmin $admin, ?string $accessUntil = null): void
     {
         $isFirstApproval = $organization->approved_at === null;
 
@@ -77,7 +78,7 @@ class OrganizationVerification
             throw new VerificationIncompleteException('This practice has not sent everything needed yet.');
         }
 
-        DB::transaction(function () use ($organization, $admin, $isFirstApproval): void {
+        DB::transaction(function () use ($organization, $admin, $isFirstApproval, $accessUntil): void {
             if ($isFirstApproval) {
                 $this->demoPatients->purge($organization->id);
                 $this->markOwnerDoctorsVerified($organization, $admin);
@@ -91,6 +92,7 @@ class OrganizationVerification
                 'rejected_at' => null,
                 'suspended_at' => null,
                 'suspension_reason' => null,
+                'access_until' => $accessUntil ?? $organization->access_until,
             ])->save();
 
             if ($isFirstApproval) {
@@ -98,9 +100,22 @@ class OrganizationVerification
                 $this->subscriptions->startTrial($organization);
             }
 
-            $this->audit->record('organizations.approved', $organization, ['first_approval' => $isFirstApproval]);
+            $this->audit->record('organizations.approved', $organization, ['first_approval' => $isFirstApproval, 'access_until' => $organization->access_until?->toDateString()]);
             $this->notifyOwners($organization, $isFirstApproval ? 'organization_approved' : 'organization_restored');
         });
+    }
+
+    /**
+     * Moving the date is all it takes: an ended practice works again at once.
+     */
+    public function changeAccess(Organization $organization, ?string $accessUntil): void
+    {
+        $from = $organization->access_until?->toDateString();
+
+        $organization->forceFill(['access_until' => $accessUntil])->save();
+
+        $this->audit->record('organizations.access_changed', $organization, ['from' => $from, 'to' => $accessUntil]);
+        $this->notifyOwners($organization, 'organization_access_changed', ['date' => $accessUntil ? Carbon::parse($accessUntil)->format('d M Y') : 'no end date']);
     }
 
     public function reject(Organization $organization, PlatformAdmin $admin, string $reason): void

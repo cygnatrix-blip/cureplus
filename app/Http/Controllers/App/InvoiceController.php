@@ -186,13 +186,13 @@ class InvoiceController extends Controller
         $gateway = $gateways->forOrganization((int) $this->tenant->id());
 
         if ($gateway === null) {
-            return back()->with('error', 'Set up Razorpay under Settings first.');
+            return back()->with('error', 'Set up online payments under Integrations first.');
         }
 
         try {
             $payment = $this->billing->createPaymentLink($invoice, $gateway);
         } catch (RequestException) {
-            return back()->with('error', 'Razorpay could not create the link. Check your keys under Settings.');
+            return back()->with('error', 'The payment provider could not create the link. Check your keys under Integrations.');
         } catch (BillingException $exception) {
             return back()->with('error', $exception->getMessage());
         }

@@ -25,6 +25,8 @@ class IntegrationController extends Controller
 
         return view('app.integrations.index', [
             'razorpay' => $integrations->get('razorpay'),
+            'cashfree' => $integrations->get('cashfree'),
+            'cashfreeWebhookUrl' => route('webhooks.cashfree', $this->tenant->organization()->uuid),
             'smtp' => $integrations->get('smtp'),
             'whatsapp' => $integrations->get('whatsapp'),
             'webhookUrl' => route('webhooks.razorpay', $this->tenant->organization()->uuid),
@@ -63,6 +65,39 @@ class IntegrationController extends Controller
         $integration->forceFill(['last_tested_at' => now(), 'last_test_result' => $passed ? 'passed' : 'failed'])->save();
 
         return back()->with($passed ? 'success' : 'error', $passed ? 'Razorpay accepted your keys.' : 'Razorpay rejected these keys. Check the Key ID, Key Secret and test/live mode.');
+    }
+
+    public function saveCashfree(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'key_id' => ['nullable', 'string', 'max:100'],
+            'key_secret' => ['nullable', 'string', 'max:200'],
+            'mode' => ['required', Rule::in(['test', 'live'])],
+            'is_enabled' => ['sometimes', 'boolean'],
+        ]);
+
+        $this->save('cashfree', $data, ['key_id', 'key_secret'], ['mode'], (bool) ($data['is_enabled'] ?? false));
+
+        return back()->with('success', 'Cashfree settings saved.');
+    }
+
+    public function testCashfree(GatewayFactory $gateways): RedirectResponse
+    {
+        $integration = OrganizationIntegration::query()->where('kind', 'cashfree')->first();
+
+        if ($integration === null) {
+            return back()->with('error', 'Save your keys first.');
+        }
+
+        try {
+            $passed = $gateways->make($integration)->testConnection();
+        } catch (ConnectionException) {
+            $passed = false;
+        }
+
+        $integration->forceFill(['last_tested_at' => now(), 'last_test_result' => $passed ? 'passed' : 'failed'])->save();
+
+        return back()->with($passed ? 'success' : 'error', $passed ? 'Cashfree accepted your keys.' : 'Cashfree rejected these keys. Check the App ID, Secret Key and test or live mode.');
     }
 
     public function saveSmtp(Request $request): RedirectResponse
@@ -136,6 +171,13 @@ class IntegrationController extends Controller
         }
 
         $integration->fill(['config' => $config, 'is_enabled' => $enabled])->save();
+
+        // One gateway takes new payments at a time, so a patient is never sent to the wrong one.
+        // Links already sent through the other still complete, because its keys are kept.
+        if ($enabled && in_array($kind, GatewayFactory::KINDS, true)) {
+            OrganizationIntegration::query()->whereIn('kind', GatewayFactory::KINDS)->where('kind', '!=', $kind)->update(['is_enabled' => false]);
+        }
+
         $this->audit->record('integrations.saved', $this->tenant->organization(), ['integration' => $kind, 'enabled' => $enabled]);
     }
 }

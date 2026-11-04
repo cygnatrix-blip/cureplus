@@ -160,13 +160,17 @@ class BillingService
 
         $organization = Organization::query()->findOrFail($invoice->organization_id);
 
+        $reference = "inv-{$invoice->id}-".now()->timestamp;
+
         $link = $gateway->createPaymentLink([
             'amount_paise' => $due,
-            'reference' => "inv-{$invoice->id}-".now()->timestamp,
+            'reference' => $reference,
             'description' => "Bill {$invoice->number}",
             'name' => $patient->name,
             'mobile' => $patient->mobile,
-            'callback_url' => route('pay.callback', $organization->uuid),
+            'email' => $patient->email,
+            'callback_url' => $gateway->provider() === 'cashfree' ? route('pay.return.cashfree', [$organization->uuid, $reference]) : route('pay.callback', $organization->uuid),
+            'notify_url' => $gateway->provider() === 'cashfree' ? route('webhooks.cashfree', $organization->uuid) : null,
         ]);
 
         // An older unpaid link must not stay live alongside the new amount.
@@ -176,7 +180,7 @@ class BillingService
             'organization_id' => $invoice->organization_id,
             'invoice_id' => $invoice->id,
             'amount_paise' => $due,
-            'mode' => 'razorpay',
+            'mode' => $gateway->provider(),
             'status' => 'pending',
             'gateway_link_id' => $link['id'],
             'gateway_link_url' => $link['url'],
@@ -188,16 +192,16 @@ class BillingService
     {
         $gatewayRefund = null;
 
-        // Money moves at Razorpay first. If that call fails nothing is recorded, and if
+        // Money moves at the gateway first. If that call fails nothing is recorded, and if
         // it succeeds the local record below is what reconciliation will match it against.
-        if ($payment->mode === 'razorpay') {
+        if (in_array($payment->mode, Payment::ONLINE_MODES, true)) {
             if ($payment->gateway_payment_id === null) {
                 throw new BillingException('This online payment has not completed.');
             }
 
             $this->assertRefundable($payment, $amountPaise);
-            $gateway = $this->gateways->forWebhook((int) $payment->organization_id)
-                ?? throw new BillingException('Razorpay is not set up for this organization.');
+            $gateway = $this->gateways->forWebhook((int) $payment->organization_id, $payment->mode)
+                ?? throw new BillingException('This payment provider is not set up for this organization.');
             $gatewayRefund = $gateway->refund($payment->gateway_payment_id, $amountPaise);
         }
 

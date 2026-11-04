@@ -39,7 +39,8 @@ class VisitPolicy extends TenantPolicy
 
     public function prescribe(User $user, Visit $visit): bool
     {
-        return $this->allows($user, 'prescriptions.manage', $visit) && $this->isOwnOrOwner($user, $visit);
+        // A prescription is the treating doctor's own legal act. Being the owner is not enough.
+        return $this->allows($user, 'prescriptions.manage', $visit) && (int) $visit->doctor_user_id === $user->id;
     }
 
     /**

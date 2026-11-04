@@ -20,6 +20,7 @@ use Illuminate\Support\Carbon;
  * @property array<string, mixed>|null $branding
  * @property OrganizationStatus $status
  * @property string|null $rejection_reason
+ * @property Carbon|null $access_until
  * @property Carbon|null $rejected_at
  * @property Carbon|null $resubmitted_at
  * @property int|null $reviewed_by
@@ -39,6 +40,7 @@ class Organization extends Model
             'type' => OrganizationType::class,
             'status' => OrganizationStatus::class,
             'rejected_at' => 'datetime',
+            'access_until' => 'date',
             'resubmitted_at' => 'datetime',
             'settings' => 'array',
             'branding' => 'array',
@@ -72,7 +74,21 @@ class Organization extends Model
 
     public function isActive(): bool
     {
-        return $this->status === OrganizationStatus::Approved;
+        return $this->status === OrganizationStatus::Approved && ! $this->accessHasEnded();
+    }
+
+    /**
+     * The chosen date is the last day that works. Nothing is changed when it passes, so
+     * moving the date is all it takes to give access back.
+     */
+    public function accessHasEnded(): bool
+    {
+        return $this->access_until !== null && today()->greaterThan($this->access_until);
+    }
+
+    public function accessEndsSoon(): bool
+    {
+        return $this->access_until !== null && ! $this->accessHasEnded() && today()->diffInDays($this->access_until) <= 7;
     }
 
     public function isSolo(): bool

@@ -65,6 +65,12 @@
             @if ($organization->status === \App\Enums\OrganizationStatus::PendingVerification)
                 <form method="POST" action="{{ route('admin.organizations.approve', $organization) }}" class="card card-body space-y-2" data-confirm="Approve {{ $organization->name }}? Patients can book with them straight away.">
                     @csrf
+                    <div>
+                        <label class="label" for="access_until">Access until (optional)</label>
+                        <input class="input" id="access_until" type="date" name="access_until" min="{{ today()->toDateString() }}" value="{{ old('access_until') }}">
+                        <p class="hint">The last day they can use CurePlus. Leave empty for no end date. You can change this later.</p>
+                        @error('access_until')<p class="field-error">{{ $message }}</p>@enderror
+                    </div>
                     <button class="btn btn-primary w-full" @disabled(! $isComplete)>Approve</button>
                     @unless ($isComplete)<p class="hint">Available once everything on the checklist is in.</p>@endunless
                 </form>

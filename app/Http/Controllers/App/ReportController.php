@@ -91,7 +91,7 @@ class ReportController extends Controller
                 $error = 'Razorpay did not respond. Check your keys under Settings.';
             }
         } else {
-            $error = 'Set up Razorpay under Settings to use this report.';
+            $error = 'This report works with Razorpay. If you use Cashfree, compare your payments with your Cashfree dashboard.';
         }
 
         return view('app.reports.reconciliation', ['from' => $from, 'to' => $to, 'result' => $result, 'error' => $error, 'money' => Money::class]);

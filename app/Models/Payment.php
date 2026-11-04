@@ -15,7 +15,9 @@ class Payment extends Model
 {
     use Auditable, BelongsToOrganization;
 
-    public const MODES = ['cash' => 'Cash', 'upi' => 'UPI', 'card' => 'Card', 'razorpay' => 'Razorpay'];
+    public const MODES = ['cash' => 'Cash', 'upi' => 'UPI', 'card' => 'Card', 'razorpay' => 'Razorpay', 'cashfree' => 'Cashfree'];
+
+    public const ONLINE_MODES = ['razorpay', 'cashfree'];
 
     protected $fillable = [
         'organization_id', 'invoice_id', 'amount_paise', 'mode', 'status', 'reference', 'gateway_link_id',

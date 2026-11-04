@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Access dates, email fix, Cashfree, prescription rule
+
+- Super admins can set an access end date at approval or later. After it the practice is locked out and its booking closes; changing the date restores access.
+- Saving SMTP details now switches sending on, and the page warns when email is only going to a log file.
+- Cashfree added alongside Razorpay. Each practice chooses one.
+- Only the doctor on a visit can write its prescription. Owners can read but not write them.
+- Smoke test opens every page as every role.
+
 ### Practice websites, prescription list, doctor approval
 
 - Each practice gets its own website at `/{slug}`: hero, doctors, services, about and photos, branches with directions, questions. Booking moved to `/book/{slug}`.

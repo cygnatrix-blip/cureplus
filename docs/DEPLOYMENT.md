@@ -132,6 +132,7 @@ Create templates in Meta Business Manager with these exact names and body parame
 | `organization_approved` | name, clinic |
 | `organization_rejected` | name, clinic, reason |
 | `organization_restored` | name, clinic |
+| `organization_access_changed` | name, clinic, date |
 | `doctor_verified` | name |
 | `doctor_rejected` | name, reason |
 
@@ -149,6 +150,12 @@ There are two separate kinds of account:
 - **Each organization's own**, for what patients pay them. Owners set this up in their portal, under Integrations.
 
 Run one payment, one refund and one subscription in test mode first. These flows are tested against simulated responses only.
+
+### Cashfree
+
+Each organization can use its own Cashfree account instead of Razorpay. Owners set this up in their portal, under Integrations. One gateway takes new payments at a time.
+
+Before going live, make one payment and one refund in Cashfree's sandbox, on an `https` address. **This has only been tested against simulated responses.** Check in particular that a webhook arrives and is accepted. Cashfree's documentation is not fully consistent about the webhook's format and which secret signs it. If the signature check rejects it, the payment still completes when the patient returns to the site, but not if they close the page first.
 
 ### CAPTCHA (recommended)
 

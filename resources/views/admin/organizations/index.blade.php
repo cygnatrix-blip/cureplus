@@ -24,7 +24,8 @@
                             <td>{{ $organization->type->label() }}</td>
                             <td>{{ $organization->memberships_count }}</td>
                             <td>{{ $organization->locations_count }}</td>
-                            <td><x-org-status :status="$organization->status" /></td>
+                            <td><x-org-status :status="$organization->status" />
+                                @if ($organization->accessHasEnded())<span class="badge badge-red">Access ended</span>@elseif ($organization->access_until)<span class="block text-xs text-slate-500">Until {{ $organization->access_until->format('d M Y') }}</span>@endif</td>
                             <td class="whitespace-nowrap">{{ $organization->created_at?->format('d M Y') }}</td>
                             <td class="text-right"><a class="btn btn-sm btn-secondary" href="{{ route('admin.organizations.show', $organization) }}">View</a></td>
                         </tr>
