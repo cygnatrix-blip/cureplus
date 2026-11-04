@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\App;
 
 use App\Http\Controllers\Controller;
+use App\Models\DoctorProfile;
 use App\Models\Invitation;
 use App\Models\Location;
 use App\Models\Membership;
 use App\Models\Role;
 use App\Services\AuditLogger;
+use App\Services\BrandingService;
 use App\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
@@ -25,7 +27,7 @@ class StaffController extends Controller
 
         return view('app.staff.index', [
             'memberships' => Membership::query()
-                ->with(['user:id,name,email,mobile', 'roles:id,key,name', 'locations:id,name'])
+                ->with(['user:id,name,email,mobile', 'user.doctorProfile:id,user_id,verification_status,registration_number,registration_council', 'roles:id,key,name', 'locations:id,name'])
                 ->when(in_array($status, ['active', 'inactive'], true), fn ($q) => $q->where('status', $status))
                 ->when($search !== '', fn ($q) => $q->whereHas('user', fn ($q) => $q
                     ->where('name', 'like', "%{$search}%")
@@ -86,6 +88,20 @@ class StaffController extends Controller
         ]);
 
         return redirect()->route('app.staff.index')->with('success', 'Access updated.');
+    }
+
+    public function photo(Request $request, Membership $membership, BrandingService $branding): RedirectResponse
+    {
+        $request->validate(['photo' => ['required', 'image', 'mimes:png,jpg,jpeg', 'max:5120']], [
+            'photo.uploaded' => 'This file is too large for the server to accept. Please choose a smaller one.',
+            'photo.mimes' => 'Please use a PNG or JPG image.',
+        ]);
+
+        abort_unless($membership->hasRole('doctor'), 404);
+
+        $branding->saveDoctorPhoto(DoctorProfile::query()->firstOrCreate(['user_id' => $membership->user_id]), $request->file('photo'));
+
+        return back()->with('success', 'Photo saved.');
     }
 
     public function deactivate(Membership $membership): RedirectResponse

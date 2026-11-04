@@ -153,7 +153,7 @@ class CustomDomainTest extends TestCase
         $doctor = $this->addMember($organization, ['doctor'], User::factory()->create(['name' => 'Dr Custom']));
         Membership::withoutTenancy()->where('user_id', $doctor->id)->update(['doctor_slug' => 'dr-custom']);
 
-        $this->get('http://book.drroy.test/dr-custom')->assertOk()->assertSee('Dr Custom');
+        $this->get('http://book.drroy.test/dr-custom')->assertOk()->assertSee('Dr Custom')->assertSee('Book your appointment at');
     }
 
     public function test_unknown_unverified_and_broken_hosts_get_a_neutral_404(): void

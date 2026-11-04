@@ -7,10 +7,19 @@ use App\Models\User;
 
 class PrescriptionPolicy extends TenantPolicy
 {
+    public function viewAny(User $user): bool
+    {
+        return $this->allows($user, 'prescriptions.view') || $this->allows($user, 'prescriptions.manage');
+    }
+
+    /**
+     * A prescription reveals a diagnosis and treatment, so being able to see a patient's
+     * contact details is not enough. An owner can grant this to other roles.
+     */
     public function view(User $user, Prescription $prescription): bool
     {
-        return $this->allows($user, 'prescriptions.manage', $prescription)
-            || $this->allows($user, 'patients.view', $prescription);
+        return $this->allows($user, 'prescriptions.view', $prescription)
+            || $this->allows($user, 'prescriptions.manage', $prescription);
     }
 
     /**

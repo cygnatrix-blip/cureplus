@@ -8,6 +8,8 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property Carbon|null $verified_at
+ * @property string|null $photo_path
+ * @property string|null $verification_note
  */
 class DoctorProfile extends Model
 {

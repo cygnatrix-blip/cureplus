@@ -26,6 +26,8 @@ Route::post('/webhooks/razorpay/{organizationUuid}', [RazorpayWebhookController:
 Route::get('/pay/callback/{organizationUuid}', [RazorpayWebhookController::class, 'callback'])->middleware('throttle:60,1')->name('pay.callback');
 
 Route::get('/brand/{slug}/manifest.webmanifest', [BrandingController::class, 'manifest'])->middleware('throttle:60,1')->name('brand.manifest');
+Route::get('/brand/{slug}/gallery/{index}', [BrandingController::class, 'gallery'])->whereNumber('index')->middleware('throttle:120,1')->name('brand.gallery');
+Route::get('/brand/{slug}/doctors/{user}', [BrandingController::class, 'doctor'])->whereNumber('user')->middleware('throttle:120,1')->name('brand.doctor');
 Route::get('/brand/{slug}/cover', [BrandingController::class, 'cover'])->middleware('throttle:60,1')->name('brand.cover');
 Route::get('/brand/{slug}/icon-{size}.png', [BrandingController::class, 'icon'])->whereNumber('size')->middleware('throttle:60,1')->name('brand.icon');
 

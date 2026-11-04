@@ -100,7 +100,7 @@ Subscriptions are off (`SUBSCRIPTIONS_ENABLED=false`), and charges are agreed wi
 
 ### 8. Approving practices
 
-New practices appear under Super Admin, Pending approvals, and every super admin gets an email. Other admin roles cannot approve.
+New practices appear under Super Admin, Pending approvals, and every super admin gets an email. Other admin roles cannot approve. Doctors invited to an approved practice appear there too, once they have sent their registration details. Patients cannot book them until they are verified.
 
 ## Outside accounts
 
@@ -132,6 +132,8 @@ Create templates in Meta Business Manager with these exact names and body parame
 | `organization_approved` | name, clinic |
 | `organization_rejected` | name, clinic, reason |
 | `organization_restored` | name, clinic |
+| `doctor_verified` | name |
+| `doctor_rejected` | name, reason |
 
 The last three go to practice owners and need the platform's own sender (`WHATSAPP_TOKEN` and `WHATSAPP_PHONE_NUMBER_ID`). Without it, owners get those by email only. Until a sender is configured, patient messages go by SMS if a gateway is set up. With neither, patients get email and push only.
 

@@ -14,6 +14,7 @@ return [
         'appointments.manage' => ['group' => 'Appointments', 'label' => 'Book, reschedule and cancel'],
         'consultations.manage' => ['group' => 'Clinical', 'label' => 'Record consultations'],
         'vitals.manage' => ['group' => 'Clinical', 'label' => 'Record vitals'],
+        'prescriptions.view' => ['group' => 'Clinical', 'label' => 'View and print prescriptions'],
         'prescriptions.manage' => ['group' => 'Clinical', 'label' => 'Write prescriptions'],
         'billing.view' => ['group' => 'Billing', 'label' => 'View bills and receipts'],
         'billing.manage' => ['group' => 'Billing', 'label' => 'Create bills and take payments'],
@@ -36,7 +37,7 @@ return [
         'owner' => ['name' => 'Owner', 'editable' => false, 'permissions' => ['*']],
         'doctor' => ['name' => 'Doctor', 'editable' => true, 'permissions' => [
             'dashboard.view', 'patients.view', 'patients.manage', 'appointments.view', 'appointments.manage',
-            'consultations.manage', 'vitals.manage', 'prescriptions.manage', 'billing.view',
+            'consultations.manage', 'vitals.manage', 'prescriptions.view', 'prescriptions.manage', 'billing.view',
         ]],
         'receptionist' => ['name' => 'Receptionist', 'editable' => true, 'permissions' => [
             'dashboard.view', 'patients.view', 'patients.manage', 'appointments.view', 'appointments.manage',

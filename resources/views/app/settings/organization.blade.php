@@ -4,7 +4,7 @@
         <x-field name="name" label="Name" :value="$organization->name" required />
         <x-field name="gstin" label="GSTIN (optional)" :value="$organization->gstin" hint="Printed on tax invoices." />
         <p class="text-sm text-slate-600">Your colours, logo and wording are under <a class="text-brand-700 underline" href="{{ route('app.settings.design') }}">Patient page design</a>.</p>
-        <p class="text-sm text-slate-600">Your booking link: <span class="font-mono">{{ route('booking.show', $organization->slug) }}</span>. It does not change, so printed QR codes keep working.</p>
+        <p class="text-sm text-slate-600">Your website: <span class="font-mono">{{ route('clinic.home', $organization->slug) }}</span>. It does not change, so printed QR codes keep working.</p>
         <div class="text-right"><button class="btn btn-primary">Save</button></div>
     </form>
 </x-layouts.app>

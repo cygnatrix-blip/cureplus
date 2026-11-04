@@ -56,6 +56,16 @@ class DemoSeeder extends Seeder
                 'contact_phone' => '033 4000 1234',
                 'contact_email' => 'care@cityclinic.test',
                 'show_fees' => true,
+                'established_year' => 1998,
+                'services' => [
+                    ['title' => 'General medicine', 'text' => 'Fever, infections, blood pressure, diabetes and everyday illness.'],
+                    ['title' => 'Child care', 'text' => 'Check-ups, growth monitoring and vaccinations.'],
+                    ['title' => 'Health check-ups', 'text' => 'Yearly check-ups and advice on staying well.'],
+                ],
+                'faqs' => [
+                    ['question' => 'Do I need an appointment?', 'answer' => 'Booking online saves you waiting, but we also see walk-in patients when we can.'],
+                    ['question' => 'How do I get my prescription?', 'answer' => 'You can download it from your account after your visit.'],
+                ],
             ],
         ])->save();
         $branches = [
@@ -79,7 +89,7 @@ class DemoSeeder extends Seeder
      */
     private function clinicalData(Organization $clinic, Location $location, User $doctor): void
     {
-        DoctorProfile::query()->firstOrCreate(['user_id' => $doctor->id], ['qualification' => 'MBBS, MD', 'specialty' => 'General Medicine', 'registration_number' => 'WB-12345', 'registration_council' => 'West Bengal Medical Council']);
+        DoctorProfile::query()->firstOrCreate(['user_id' => $doctor->id], ['qualification' => 'MBBS, MD', 'specialty' => 'General Medicine', 'registration_number' => 'WB-12345', 'registration_council' => 'West Bengal Medical Council'])->forceFill(['verification_status' => 'verified', 'verified_at' => now()])->save();
 
         foreach ([1, 2, 3, 4, 5, 6] as $weekday) {
             DoctorAvailability::withoutTenancy()->firstOrCreate(

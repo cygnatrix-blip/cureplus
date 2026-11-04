@@ -133,7 +133,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/data-requests/{dataRequest}/resolve', [DataRequestController::class, 'resolve'])->can('platform.privacy.manage')->name('data-requests.resolve');
 
             Route::get('/doctors', [DoctorController::class, 'index'])->can('platform.doctors.manage')->name('doctors.index');
-            Route::post('/doctors/{profile}/verify', [DoctorController::class, 'verify'])->can('platform.doctors.manage')->name('doctors.verify');
+            Route::post('/doctors/{profile}/verify', [DoctorController::class, 'verify'])->can('platform.approvals.manage')->name('doctors.verify');
 
             Route::get('/audit-log', [AuditLogController::class, 'index'])->can('platform.audit.view')->name('audit.index');
             Route::get('/audit-log/export', [AuditLogController::class, 'export'])->can('platform.audit.view')->name('audit.export');

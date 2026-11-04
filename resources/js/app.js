@@ -208,8 +208,7 @@ const shade = (hex, amount) => {
  * Phone photos are large, and some servers cannot read JPG: what is uploaded is always a
  * small PNG or JPG the server accepts. The server still checks and re-encodes it.
  */
-const shrinkForUpload = async (input, maxSide, type) => {
-    const file = input.files[0];
+const shrinkFile = async (file, maxSide, type) => {
     const bitmap = await createImageBitmap(file);
     const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
     const canvas = document.createElement('canvas');
@@ -224,12 +223,49 @@ const shrinkForUpload = async (input, maxSide, type) => {
 
     context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
     const blob = await new Promise((resolve) => canvas.toBlob(resolve, type, 0.85));
+    return new File([blob], type === 'image/jpeg' ? 'upload.jpg' : 'upload.png', { type });
+};
+
+const shrinkForUpload = async (input, maxSide, type) => {
     const transfer = new DataTransfer();
-    transfer.items.add(new File([blob], type === 'image/jpeg' ? 'upload.jpg' : 'upload.png', { type }));
+    const shrunk = await Promise.all([...input.files].map((file) => shrinkFile(file, maxSide, type)));
+    shrunk.forEach((file) => transfer.items.add(file));
     input.files = transfer.files;
 
-    return canvas.toDataURL(type, 0.85);
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(shrunk[0]);
+    });
 };
+
+Alpine.data('photoInput', () => ({
+    preview: '',
+    error: '',
+    busy: false,
+    get hasPreview() {
+        return this.preview !== '';
+    },
+    async shrink(event) {
+        const input = event.target;
+
+        if (!input.files.length) {
+            return;
+        }
+
+        this.busy = true;
+        this.error = '';
+
+        try {
+            this.preview = await shrinkForUpload(input, 640, 'image/png');
+        } catch {
+            input.value = '';
+            this.error = 'That file could not be opened as a picture. Please try a PNG or JPG.';
+        } finally {
+            this.busy = false;
+        }
+    },
+}));
 
 Alpine.data('brandDesigner', () => ({
     logo: '',
@@ -265,6 +301,25 @@ Alpine.data('brandDesigner', () => ({
     },
     prepareLogo(event) {
         return this.prepareImage(event.target, 512, 'image/png', 'logo');
+    },
+    async prepareGallery(event) {
+        const input = event.target;
+
+        if (!input.files.length) {
+            return;
+        }
+
+        this.preparing = true;
+        this.imageError = '';
+
+        try {
+            await (this.canReadJpeg ? shrinkForUpload(input, 1200, 'image/jpeg') : shrinkForUpload(input, 800, 'image/png'));
+        } catch {
+            input.value = '';
+            this.imageError = 'One of those files could not be opened as a picture. Please try PNG or JPG.';
+        } finally {
+            this.preparing = false;
+        }
     },
     prepareCover(event) {
         return this.canReadJpeg

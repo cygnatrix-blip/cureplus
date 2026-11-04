@@ -11,6 +11,7 @@ use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\OrganizationDocument;
 use App\Services\AuditLogger;
+use App\Services\DoctorVerification;
 use App\Services\OrganizationVerification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,13 +22,14 @@ class OrganizationApprovalController extends Controller
 {
     public function __construct(private readonly OrganizationVerification $verification) {}
 
-    public function index(): View
+    public function index(DoctorVerification $doctors): View
     {
         return view('admin.approvals.index', [
             // Oldest first: whoever has waited longest is reviewed first.
             'pending' => Organization::query()->where('status', OrganizationStatus::PendingVerification)->orderBy('created_at')->paginate(25),
             'rejected' => Organization::query()->where('status', OrganizationStatus::Rejected)->latest('rejected_at')->limit(25)->get(),
             'verification' => $this->verification,
+            'doctors' => $doctors->waiting(),
         ]);
     }
 

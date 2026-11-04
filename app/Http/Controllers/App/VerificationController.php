@@ -9,6 +9,7 @@ use App\Models\DoctorProfile;
 use App\Models\OrganizationDocument;
 use App\Services\AuditLogger;
 use App\Services\DemoPatients;
+use App\Services\DoctorVerification;
 use App\Services\OrganizationVerification;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
@@ -38,7 +39,7 @@ class VerificationController extends Controller
         ]);
     }
 
-    public function saveRegistration(Request $request, AuditLogger $audit): RedirectResponse
+    public function saveRegistration(Request $request, AuditLogger $audit, DoctorVerification $doctors): RedirectResponse
     {
         abort_unless($this->tenant->membership()?->hasRole('doctor'), 403);
 
@@ -48,7 +49,7 @@ class VerificationController extends Controller
         ]);
 
         $profile = DoctorProfile::query()->firstOrNew(['user_id' => $request->user()->id]);
-        $changed = $profile->registration_number !== $data['registration_number'];
+        $changed = $profile->registration_number !== $data['registration_number'] || $profile->registration_council !== $data['registration_council'];
         $profile->fill($data);
 
         if ($changed) {
@@ -56,6 +57,7 @@ class VerificationController extends Controller
         }
 
         $profile->save();
+        $doctors->registrationSaved($profile->load('user:id,name'), $changed);
         $audit->record('organizations.registration_saved', $this->tenant->organization());
 
         return back()->with('success', 'Registration details saved.');

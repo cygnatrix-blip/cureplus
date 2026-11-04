@@ -88,6 +88,52 @@ class PrescriptionController extends Controller
         return redirect()->route('app.prescriptions.show', $prescription)->with('success', 'Prescription saved.');
     }
 
+    /**
+     * Owners see the whole practice, and a doctor the ones they wrote. Anyone else an owner
+     * has allowed in sees the branches they work at.
+     */
+    public function index(Request $request, TenantContext $tenant): View
+    {
+        $membership = $tenant->membership();
+        $isOwner = $membership?->hasRole('owner') ?? false;
+        $onlyOwn = ! $isOwner && ($membership?->hasRole('doctor') ?? false);
+        $search = trim((string) $request->query('q'));
+        $doctorId = $request->integer('doctor') ?: null;
+        $from = $this->validDate($request->query('from'));
+        $to = $this->validDate($request->query('to'));
+
+        $visible = Prescription::query()
+            ->when($onlyOwn, fn ($query) => $query->where('doctor_user_id', $request->user()->id))
+            ->when(! $isOwner && ! $onlyOwn, fn ($query) => $query->whereIn('location_id', $membership?->locations->pluck('id') ?? []));
+
+        return view('app.prescriptions.index', [
+            'prescriptions' => (clone $visible)
+                ->with(['patient:id,name,patient_code', 'location:id,name'])
+                ->when($search !== '', fn ($query) => $query->whereHas('patient', fn ($query) => $query
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('patient_code', 'like', "%{$search}%")
+                    ->orWhere('mobile', 'like', "%{$search}%")))
+                ->when($doctorId && ! $onlyOwn, fn ($query) => $query->where('doctor_user_id', $doctorId))
+                ->when($from, fn ($query) => $query->whereDate('issued_at', '>=', $from))
+                ->when($to, fn ($query) => $query->whereDate('issued_at', '<=', $to))
+                ->latest('issued_at')
+                ->latest('id')
+                ->paginate(25)
+                ->withQueryString(),
+            'doctors' => (clone $visible)->select('doctor_user_id', 'doctor_name')->distinct()->orderBy('doctor_name')->get(),
+            'onlyOwn' => $onlyOwn,
+            'search' => $search,
+            'doctorId' => $doctorId,
+            'from' => $from,
+            'to' => $to,
+        ]);
+    }
+
+    private function validDate(mixed $value): ?string
+    {
+        return is_string($value) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1 ? $value : null;
+    }
+
     public function show(Prescription $prescription, AuditLogger $audit): View
     {
         $audit->record('prescriptions.viewed', $prescription);

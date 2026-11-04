@@ -22,7 +22,23 @@
                         <tr>
                             <td class="font-medium text-slate-900">{{ $membership->user->name }}</td>
                             <td>{{ $membership->user->email ?? $membership->user->mobile }}</td>
-                            <td>{{ $membership->roles->pluck('name')->join(', ') }}</td>
+                            <td>
+                                {{ $membership->roles->pluck('name')->join(', ') }}
+                                @if (config('cureplus.organizations.doctors_need_approval') && $membership->hasRole('doctor'))
+                                    @php
+                                        $doctorProfile = $membership->user->doctorProfile;
+                                    @endphp
+                                    @if ($doctorProfile?->verification_status === 'verified')
+                                        <span class="badge badge-green">Bookable</span>
+                                    @elseif ($doctorProfile?->verification_status === 'rejected')
+                                        <span class="badge badge-red">Not verified</span>
+                                    @elseif (blank($doctorProfile?->registration_number) || blank($doctorProfile?->registration_council))
+                                        <span class="badge badge-amber">Needs registration number</span>
+                                    @else
+                                        <span class="badge badge-amber">Awaiting check</span>
+                                    @endif
+                                @endif
+                            </td>
                             <td>{{ $membership->hasRole('owner') ? 'All' : $membership->locations->pluck('name')->join(', ') }}</td>
                             <td><x-org-status :status="$membership->status" /></td>
                             <td class="text-right"><a class="btn btn-sm btn-secondary" href="{{ route('app.staff.edit', $membership) }}">Manage</a></td>
@@ -45,9 +61,9 @@
             <ol class="mt-2 list-decimal space-y-1 pl-5">
                 <li>Enter their email, tick Doctor, and choose where they sit.</li>
                 <li>They get an email link, and set their name and password. If they already use CurePlus elsewhere, they just sign in.</li>
-                <li>They add their qualification and registration number under My account.</li>
+                <li>They add their qualification and registration number under My account. Our team checks it, usually within 24 hours, and patients can book them after that.</li>
                 <li>You set their hours under <a class="underline" href="{{ route('app.calendar.index') }}">Doctor calendar</a> and their fee under <a class="underline" href="{{ route('app.billing-settings.index') }}">Fees and services</a>.</li>
-                <li>They now appear on your booking page, with their own link under <a class="underline" href="{{ route('app.booking-links.index') }}">Booking links</a>.</li>
+                <li>Once checked, they appear on your website and booking page, with their own link under <a class="underline" href="{{ route('app.booking-links.index') }}">Booking links</a>.</li>
             </ol>
             <p class="mt-2">If you see patients yourself, press Manage on your own row above and tick Doctor.</p>
         </details>

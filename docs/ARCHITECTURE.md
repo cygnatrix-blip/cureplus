@@ -322,6 +322,12 @@ To render a PDF there, the tenant is set just for that call: `$tenant->run($orga
 
 **Subscriptions switch:** `config('plans.enabled')` (`SUBSCRIPTIONS_ENABLED`, off). While off, `subscriptions.on` makes the pages 404, `FeatureGate` allows everything except per-organization overrides, `PlanLimits` returns no limit, and `SubscriptionService::enforce` does nothing.
 
+**Practice website:** `/{slug}` is the practice's own website (`ClinicSiteController`, `clinic/home.blade.php`) and the home page on its custom domain. It is the one public page search engines may index. Booking is at `/book/{slug}`, and a doctor's own link is `/{slug}/{doctor}`. Content lives in `organizations.branding`, edited under Website and design, and empty sections hide themselves.
+
+**Doctor verification:** `DoctorVerification` holds the review. `PublicBooking` only offers doctors whose `doctor_profiles.verification_status` is `verified`, unless `DOCTOR_REQUIRE_APPROVAL=false`. The check belongs to the doctor, so it carries across clinics, and changing the number or council re-opens it. Desk booking by clinic staff is not gated.
+
+**Prescription access:** `prescriptions.view` or `prescriptions.manage` is required. Seeing a patient's contact details (`patients.view`) is not enough. Owners can grant `prescriptions.view` to other roles under Role permissions.
+
 **Booking never matches on mobile.** It reuses a clinic's record only when the proved email and the name both match. Otherwise knowing someone's name and number would attach a stranger's login to their record, so a mismatch makes a new record for the clinic to review.
 
 **Per-clinic design:** colours, corners, logo, cover photo, tagline, about text, highlights, contact details and whether fees show are stored in `organizations.branding`, `brand_color` and `cover_image_path`, and edited at `/app/settings/design`. Layout and flow are shared by everyone. `BrandTheme` turns the colours into `--color-brand-*` and `--color-accent-*` overrides of the Tailwind theme, darkening the button shade until white text reaches 4.5:1 contrast. Values are validated as `#rrggbb` on save and checked again on output, because they go into a nonce-protected style block on public pages. Uploads are re-encoded by `BrandingService`. `PortalBrand` decides whose look the patient pages wear: the custom domain, else the clinic remembered in the session from its booking page, else the patient's only clinic, else the neutral look.

@@ -11,6 +11,7 @@
             ['Queue', 'app.queue.index', 'appointments.view'],
             ['Follow-ups', 'app.follow-ups.index', 'appointments.manage'],
             ['Doctor calendar', 'app.calendar.index', 'appointments.manage'],
+            ['Prescriptions', 'app.prescriptions.index', 'prescriptions.view'],
             ['Medicines', 'app.medicines.index', 'prescriptions.manage'],
         ],
         'Money' => [
@@ -22,7 +23,7 @@
             ['Staff and doctors', 'app.staff.index', 'staff.manage'],
             [$solo ? 'Chambers' : 'Branches', 'app.locations.index', 'locations.manage'],
             $solo ? null : ['Role permissions', 'app.roles.index', 'roles.manage'],
-            ['Patient page design', 'app.settings.design', 'settings.manage'],
+            ['Website and design', 'app.settings.design', 'settings.manage'],
             ['Booking links', 'app.booking-links.index', 'settings.manage'],
             ['Organization', 'app.settings.organization', 'settings.manage'],
             ['Custom domain', 'app.domains.index', 'settings.manage'],

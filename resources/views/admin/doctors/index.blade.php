@@ -18,11 +18,10 @@
                             <td><span @class(['badge', 'badge-green' => $profile?->verification_status === 'verified', 'badge-red' => $profile?->verification_status === 'rejected', 'badge-slate' => $profile?->verification_status !== 'verified' && $profile?->verification_status !== 'rejected'])>{{ ucfirst($profile?->verification_status ?? 'No profile') }}</span></td>
                             <td class="text-right">
                                 @if ($profile)
-                                    <form method="POST" action="{{ route('admin.doctors.verify', $profile) }}" class="flex justify-end gap-1">
-                                        @csrf
-                                        <button class="btn btn-sm btn-primary" name="status" value="verified">Verify</button>
-                                        <button class="btn btn-sm btn-secondary" name="status" value="rejected">Reject</button>
-                                    </form>
+                                    @can('platform.approvals.manage')
+                                        <form method="POST" action="{{ route('admin.doctors.verify', $profile) }}" class="flex justify-end gap-1">@csrf<button class="btn btn-sm btn-primary" name="status" value="verified">Verify</button></form>
+                                        <form method="POST" action="{{ route('admin.doctors.verify', $profile) }}" class="mt-1 flex justify-end gap-1">@csrf<input class="input min-h-9 w-44 py-1 text-sm" name="reason" placeholder="Reason" aria-label="Reason for rejecting" required><button class="btn btn-sm btn-secondary" name="status" value="rejected">Reject</button></form>
+                                    @endcan
                                 @endif
                             </td>
                         </tr>

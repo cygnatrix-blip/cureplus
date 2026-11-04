@@ -6,7 +6,6 @@ use App\Actions\RegisterPatient;
 use App\Enums\OtpPurpose;
 use App\Enums\VisitType;
 use App\Exceptions\SlotUnavailableException;
-use App\Http\Middleware\ResolveHost;
 use App\Models\Consent;
 use App\Models\Organization;
 use App\Models\Patient;
@@ -39,13 +38,6 @@ class BookingController extends Controller
 
     public function show(Request $request, string $slug, ?string $doctorSlug = null): View
     {
-        $custom = $request->attributes->get(ResolveHost::ORGANIZATION_ATTRIBUTE);
-
-        // On a custom domain the first path segment is the doctor, because the host already names the organization.
-        if ($custom !== null && $doctorSlug === null && $slug !== $custom->slug) {
-            [$slug, $doctorSlug] = [$custom->slug, $slug];
-        }
-
         $organization = $this->booking->organization($slug);
         app(PortalBrand::class)->remember($organization);
 

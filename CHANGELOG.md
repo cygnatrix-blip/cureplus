@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Practice websites, prescription list, doctor approval
+
+- Each practice gets its own website at `/{slug}`: hero, doctors, services, about and photos, branches with directions, questions. Booking moved to `/book/{slug}`.
+- New settings: services, questions, clinic photos, year established, doctor photos.
+- Prescriptions list with search for owners and doctors.
+- Prescriptions now need their own permission. Reception and nurses can no longer open them unless an owner allows it.
+- Patients can only book doctors whose registration a super admin has checked.
+
 ### Approval workflow, subscriptions off, audit fixes
 
 - Practices start as pending verification. They can sign in, upload documents, and set up branches, staff, fees and sample patients. Booking links, real patients, bills, prescription printing, online payments, SMS and WhatsApp stay closed until approval, enforced in middleware, policies and services.

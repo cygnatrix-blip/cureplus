@@ -1,7 +1,7 @@
 @props(['title' => null])
 @php
     $admin = auth('platform')->user();
-    $waiting = $admin?->can('platform.approvals.manage') ? \App\Models\Organization::query()->where('status', \App\Enums\OrganizationStatus::PendingVerification)->count() : 0;
+    $waiting = $admin?->can('platform.approvals.manage') ? \App\Models\Organization::query()->where('status', \App\Enums\OrganizationStatus::PendingVerification)->count() + app(\App\Services\DoctorVerification::class)->waiting()->count() : 0;
     $navGroups = [
         '' => [
             ['Dashboard', 'admin.dashboard', null],

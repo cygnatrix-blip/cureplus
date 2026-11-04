@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\App;
 
 use App\Http\Controllers\Controller;
+use App\Models\Organization;
 use App\Services\AuditLogger;
 use App\Services\BrandingService;
 use App\Support\BrandTheme;
@@ -39,7 +40,11 @@ class DesignController extends Controller
     public function image(string $kind): Response
     {
         $organization = $this->tenant->organization();
-        $path = $kind === 'logo' ? $organization->icon_192_path : $organization->cover_image_path;
+        $path = match (true) {
+            $kind === 'logo' => $organization->icon_192_path,
+            $kind === 'cover' => $organization->cover_image_path,
+            default => $organization->branding['gallery'][(int) substr($kind, 8)] ?? null,
+        };
         $disk = Storage::disk(config('filesystems.default'));
 
         abort_unless($path !== null && $disk->exists($path), 404);
@@ -60,6 +65,17 @@ class DesignController extends Controller
             'contact_phone' => ['nullable', 'string', 'max:30'],
             'contact_email' => ['nullable', 'email', 'max:190'],
             'show_fees' => ['sometimes', 'boolean'],
+            'established_year' => ['nullable', 'integer', 'between:1900,'.now()->year],
+            'services' => ['nullable', 'array', 'max:6'],
+            'services.*.title' => ['nullable', 'string', 'max:60'],
+            'services.*.text' => ['nullable', 'string', 'max:160'],
+            'faqs' => ['nullable', 'array', 'max:5'],
+            'faqs.*.question' => ['nullable', 'string', 'max:150'],
+            'faqs.*.answer' => ['nullable', 'string', 'max:400'],
+            'gallery' => ['nullable', 'array', 'max:6'],
+            'gallery.*' => ['image', 'mimes:png,jpg,jpeg', 'max:5120'],
+            'remove_gallery' => ['nullable', 'array'],
+            'remove_gallery.*' => ['integer'],
             'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:2048'],
             'cover' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:5120'],
             'remove_cover' => ['sometimes', 'boolean'],
@@ -86,6 +102,10 @@ class DesignController extends Controller
                 'contact_phone' => $data['contact_phone'] ?? null,
                 'contact_email' => $data['contact_email'] ?? null,
                 'show_fees' => (bool) ($data['show_fees'] ?? false),
+                'established_year' => isset($data['established_year']) ? (int) $data['established_year'] : null,
+                'services' => $this->filled($data['services'] ?? [], 'title'),
+                'faqs' => $this->filled($data['faqs'] ?? [], 'question', 'answer'),
+                'gallery' => $organization->branding['gallery'] ?? [],
             ],
         ])->save();
 
@@ -101,6 +121,8 @@ class DesignController extends Controller
             $branding->saveCover($organization, $request->file('cover'));
         }
 
+        $this->updateGallery($request, $organization, $branding);
+
         $audit->record('organizations.design_changed', $organization);
 
         return back()->with('success', 'Your design is saved. Patients see it right away.');
@@ -114,5 +136,39 @@ class DesignController extends Controller
         $lines = array_map('trim', preg_split('/\R/', (string) $text) ?: []);
 
         return array_slice(array_values(array_filter($lines, fn (string $line) => $line !== '')), 0, 4);
+    }
+
+    /**
+     * Rows the practice left blank are dropped, so an empty section hides itself on the site.
+     *
+     * @param  array<int|string, array<string, string|null>>  $rows
+     * @return list<array<string, string>>
+     */
+    private function filled(array $rows, string ...$required): array
+    {
+        $kept = array_filter($rows, fn (array $row) => array_reduce($required, fn (bool $carry, string $key) => $carry && filled($row[$key] ?? null), true));
+
+        return array_values(array_map(fn (array $row) => array_map(fn (?string $value) => (string) $value, $row), $kept));
+    }
+
+    private function updateGallery(Request $request, Organization $organization, BrandingService $branding): void
+    {
+        $paths = $organization->branding['gallery'] ?? [];
+        $disk = Storage::disk(config('filesystems.default'));
+
+        foreach (array_map('intval', (array) $request->input('remove_gallery', [])) as $index) {
+            if (isset($paths[$index])) {
+                $disk->delete($paths[$index]);
+                unset($paths[$index]);
+            }
+        }
+
+        foreach ((array) $request->file('gallery', []) as $file) {
+            if (count($paths) < 6) {
+                $paths[] = $branding->saveGalleryPhoto($organization, $file);
+            }
+        }
+
+        $organization->forceFill(['branding' => ['gallery' => array_values($paths)] + ($organization->branding ?? [])])->save();
     }
 }

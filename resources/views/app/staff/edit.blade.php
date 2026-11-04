@@ -25,6 +25,18 @@
             </fieldset>
             <div class="flex justify-end gap-2"><a class="btn btn-ghost" href="{{ route('app.staff.index') }}">Back</a><button class="btn btn-primary">Save</button></div>
         </form>
+        @if ($membership->hasRole('doctor'))
+            <form method="POST" action="{{ route('app.staff.photo', $membership) }}" enctype="multipart/form-data" class="card card-body space-y-2" x-data="photoInput">
+                @csrf
+                <h2 class="font-semibold text-slate-900">Doctor's photo</h2>
+                <img x-show="hasPreview" :src="preview" alt="" class="h-24 w-24 rounded-full object-cover">
+                <input class="input" type="file" name="photo" accept="image/*" required @change="shrink" aria-label="Doctor's photo">
+                <p class="hint">Shown on your website. Ask the doctor first, and use a clear, recent photo.</p>
+                <p class="field-error" x-show="error" x-text="error" role="alert"></p>
+                @error('photo')<p class="field-error">{{ $message }}</p>@enderror
+                <button class="btn btn-secondary" :disabled="busy">Save photo</button>
+            </form>
+        @endif
         @if ($membership->isActive())
             <form method="POST" action="{{ route('app.staff.deactivate', $membership) }}" class="text-right" data-confirm="Remove {{ $membership->user->name }}'s access?">@csrf<button class="btn btn-danger">Remove access</button></form>
         @else

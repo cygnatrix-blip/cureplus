@@ -1,5 +1,5 @@
 <x-layouts.admin title="Pending approvals">
-    <x-page-header title="Pending approvals" subtitle="Oldest first." />
+    <x-page-header title="Pending approvals" subtitle="Practices and doctors. Oldest first." />
     <div class="card">
         @if ($pending->isEmpty())
             <x-empty title="Nothing is waiting" text="New signups appear here." />
@@ -21,6 +21,27 @@
         @endif
     </div>
     <div class="mt-4">{{ $pending->links() }}</div>
+
+    <section class="card mt-4">
+        <div class="card-header"><h2 class="card-title">Doctors waiting to be checked</h2></div>
+        <p class="px-4 pt-3 text-sm text-slate-600 sm:px-5">Patients cannot book these doctors yet. Check each number on the <a class="text-brand-700 underline" href="https://www.nmc.org.in/information-desk/indian-medical-register/" target="_blank" rel="noopener noreferrer">Indian Medical Register</a>, which is outside CurePlus.</p>
+        @forelse ($doctors as $row)
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4 text-sm last:border-b-0 sm:px-5">
+                <div class="min-w-0">
+                    <p class="font-medium text-slate-900">{{ $row['profile']->user?->name }}</p>
+                    <p class="text-slate-500">{{ $row['clinics'] }}</p>
+                    <p class="mt-1">{{ $row['profile']->registration_number }} · {{ $row['profile']->registration_council }}</p>
+                    @if ($row['profile']->qualification)<p class="text-slate-500">{{ $row['profile']->qualification }}</p>@endif
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <form method="POST" action="{{ route('admin.doctors.verify', $row['profile']) }}">@csrf<button class="btn btn-sm btn-primary" name="status" value="verified">Verify</button></form>
+                    <form method="POST" action="{{ route('admin.doctors.verify', $row['profile']) }}" class="flex gap-1">@csrf<input class="input min-h-9 w-52 py-1 text-sm" name="reason" placeholder="Reason, if rejecting" aria-label="Reason for rejecting {{ $row['profile']->user?->name }}" required><button class="btn btn-sm btn-secondary" name="status" value="rejected">Reject</button></form>
+                </div>
+            </div>
+        @empty
+            <x-empty title="No doctors are waiting" />
+        @endforelse
+    </section>
 
     @if ($rejected->isNotEmpty())
         <section class="card mt-4">

@@ -59,7 +59,7 @@ These are created by `DemoSeeder`, which refuses to run in production. The passw
 
 Owners, doctors and admins are asked to set up 2FA at first sign-in. With `MAIL_MAILER=log`, emails appear in `storage/logs/laravel.log`. Search for `Your code is`. Set `QUEUE_CONNECTION=sync` locally unless you run `php artisan queue:work`, or queued emails such as verification links and invitations will not go out.
 
-Try the patient side at `/city-clinic`, and sign in at `/patient/login` with any email address. The clinic owner changes how those pages look under Patient page design.
+Try the practice's website at `/city-clinic`, with booking at `/book/city-clinic`, and sign in at `/patient/login` with any email address. The clinic owner changes how those pages look under Patient page design.
 
 ## Checks
 

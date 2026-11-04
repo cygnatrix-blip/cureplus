@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DoctorProfile;
+use App\Models\Membership;
 use App\Models\Organization;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
@@ -60,6 +62,36 @@ class BrandingController extends Controller
         abort_unless($organization->cover_image_path !== null && $disk->exists($organization->cover_image_path), 404);
 
         return response((string) $disk->get($organization->cover_image_path), 200, ['Content-Type' => str_ends_with($organization->cover_image_path, '.png') ? 'image/png' : 'image/jpeg', 'Cache-Control' => 'public, max-age=3600']);
+    }
+
+    public function gallery(string $slug, int $index): Response
+    {
+        $organization = $this->activeOrganization($slug);
+
+        return $this->photo($organization->branding['gallery'][$index] ?? null);
+    }
+
+    /**
+     * Only for someone who actually practises at this clinic.
+     */
+    public function doctor(string $slug, int $user): Response
+    {
+        $organization = $this->activeOrganization($slug);
+        $works = Membership::withoutTenancy()->where('organization_id', $organization->id)->where('user_id', $user)->where('status', 'active')
+            ->whereHas('roles', fn ($query) => $query->where('key', 'doctor'))->exists();
+
+        abort_unless($works, 404);
+
+        return $this->photo(DoctorProfile::query()->where('user_id', $user)->value('photo_path'));
+    }
+
+    private function photo(?string $path): Response
+    {
+        $disk = Storage::disk(config('filesystems.default'));
+
+        abort_unless($path !== null && $disk->exists($path), 404);
+
+        return response((string) $disk->get($path), 200, ['Content-Type' => str_ends_with($path, '.png') ? 'image/png' : 'image/jpeg', 'Cache-Control' => 'public, max-age=3600']);
     }
 
     private function activeOrganization(string $slug): Organization

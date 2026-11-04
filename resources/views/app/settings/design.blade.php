@@ -1,7 +1,7 @@
 @php($branding = $organization->branding ?? [])
-<x-layouts.app title="Patient page design">
-    <x-page-header title="Patient page design" subtitle="Make your booking page and patient dashboard your own. The layout stays the same; the look is yours.">
-        <a class="btn btn-secondary" href="{{ route('booking.show', $organization->slug) }}" target="_blank" rel="noopener">Open my booking page</a>
+<x-layouts.app title="Website and design">
+    <x-page-header title="Website and design" subtitle="Your own website, booking pages and patient dashboard. Sections you leave empty are hidden.">
+        @if ($organization->isActive())<a class="btn btn-secondary" href="{{ route('clinic.home', $organization->slug) }}" target="_blank" rel="noopener">Open my website</a>@else<span class="text-sm text-slate-500">Your website goes live once you are verified.</span>@endif
     </x-page-header>
     <form method="POST" action="{{ route('app.settings.design.update') }}" enctype="multipart/form-data" class="grid items-start gap-5 lg:grid-cols-2"
         x-data="brandDesigner" data-primary="{{ old('brand_color', $organization->brand_color ?: '#088575') }}" data-accent="{{ old('accent_color', $branding['accent_color'] ?? '#f59e0b') }}" data-name="{{ $organization->name }}" data-tagline="{{ old('tagline', $branding['tagline'] ?? '') }}" data-can-read-jpeg="{{ $canReadJpeg ? '1' : '0' }}" data-logo="{{ $organization->icon_192_path ? route('app.settings.design.image', 'logo') : '' }}" data-cover="{{ $organization->cover_image_path ? route('app.settings.design.image', 'cover') : '' }}">
@@ -48,7 +48,7 @@
                 <div>
                     <label class="label" for="cover">Cover photo</label>
                     <input class="input" id="cover" type="file" name="cover" accept="image/*" @change="prepareCover">
-                    <p class="hint">A wide photo of your clinic. It sits behind your tagline.</p>
+                    <p class="hint">A wide photo of your clinic. It fills the top of your website, behind your tagline.</p>
                     @error('cover')<p class="field-error">{{ $message }}</p>@enderror
                     @if ($organization->cover_image_path)<label class="mt-1 flex items-center gap-2 text-sm"><input type="checkbox" name="remove_cover" value="1"> Remove my cover photo</label>@endif
                 </div>
@@ -74,6 +74,44 @@
                     <x-field name="contact_email" label="Email for patients" type="email" :value="$branding['contact_email'] ?? null" />
                 </div>
                 <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="show_fees" value="1" @checked(old('show_fees', $branding['show_fees'] ?? true))> Show consultation fees to patients</label>
+            </section>
+            <section class="card card-body space-y-3">
+                <h3 class="font-semibold text-slate-900">Your website</h3>
+                <x-field name="established_year" label="Year your practice began (optional)" type="number" min="1900" max="{{ now()->year }}" :value="$branding['established_year'] ?? null" hint="Shows as years of care. Only enter what is true." />
+                <div>
+                    <p class="label">Clinic photos (up to 6)</p>
+                    @if ($branding['gallery'] ?? [])
+                        <div class="mb-2 grid grid-cols-3 gap-2">
+                            @foreach ($branding['gallery'] as $index => $path)
+                                <label class="text-xs">
+                                    <img src="{{ route('app.settings.design.image', 'gallery-'.$index) }}" alt="" class="h-20 w-full rounded-lg object-cover">
+                                    <span class="mt-1 flex items-center gap-1"><input type="checkbox" name="remove_gallery[]" value="{{ $index }}"> Remove</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    @endif
+                    <input class="input" id="gallery" type="file" name="gallery[]" accept="image/*" multiple @change="prepareGallery" aria-label="Add clinic photos">
+                    @error('gallery')<p class="field-error">{{ $message }}</p>@enderror
+                </div>
+                <fieldset class="space-y-2">
+                    <legend class="label">Services (up to 6)</legend>
+                    @for ($row = 0; $row < 6; $row++)
+                        <div class="grid gap-2 sm:grid-cols-3">
+                            <input class="input" name="services[{{ $row }}][title]" maxlength="60" placeholder="Service" aria-label="Service {{ $row + 1 }}" value="{{ old("services.{$row}.title", $branding['services'][$row]['title'] ?? '') }}">
+                            <input class="input sm:col-span-2" name="services[{{ $row }}][text]" maxlength="160" placeholder="One line about it (optional)" aria-label="Description of service {{ $row + 1 }}" value="{{ old("services.{$row}.text", $branding['services'][$row]['text'] ?? '') }}">
+                        </div>
+                    @endfor
+                </fieldset>
+                <fieldset class="space-y-2">
+                    <legend class="label">Common questions (up to 5)</legend>
+                    @for ($row = 0; $row < 5; $row++)
+                        <div class="space-y-1">
+                            <input class="input" name="faqs[{{ $row }}][question]" maxlength="150" placeholder="Question" aria-label="Question {{ $row + 1 }}" value="{{ old("faqs.{$row}.question", $branding['faqs'][$row]['question'] ?? '') }}">
+                            <input class="input" name="faqs[{{ $row }}][answer]" maxlength="400" placeholder="Answer" aria-label="Answer {{ $row + 1 }}" value="{{ old("faqs.{$row}.answer", $branding['faqs'][$row]['answer'] ?? '') }}">
+                        </div>
+                    @endfor
+                </fieldset>
+                <p class="hint">Doctor photos are added under Staff and doctors, then Manage.</p>
             </section>
             <p class="field-error" x-show="imageError" x-text="imageError" role="alert"></p><button class="btn btn-primary" :disabled="preparing">Save design</button>
         </div>

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\DoctorProfile;
 use App\Models\Organization;
 use GdImage;
 use Illuminate\Http\UploadedFile;
@@ -54,22 +55,58 @@ class BrandingService
      */
     public function saveCover(Organization $organization, UploadedFile $file): void
     {
-        $source = $this->decode($file, 'cover');
-        $width = min(1600, imagesx($source));
+        $path = $this->savePhoto($this->decode($file, 'cover'), 1600, 'branding/'.$organization->id);
+
+        $this->removeCover($organization);
+        $organization->forceFill(['cover_image_path' => $path])->save();
+    }
+
+    public function saveGalleryPhoto(Organization $organization, UploadedFile $file): string
+    {
+        return $this->savePhoto($this->decode($file, 'gallery'), 1200, 'branding/'.$organization->id);
+    }
+
+    /**
+     * Cropped square from the centre, so every doctor's card lines up.
+     */
+    public function saveDoctorPhoto(DoctorProfile $profile, UploadedFile $file): void
+    {
+        $source = $this->decode($file, 'photo');
+        $side = min(imagesx($source), imagesy($source));
+        $canvas = imagecreatetruecolor(480, 480);
+        imagecopyresampled($canvas, $source, 0, 0, (int) ((imagesx($source) - $side) / 2), (int) ((imagesy($source) - $side) / 2), 480, 480, $side, $side);
+        $path = $this->writeImage($canvas, 'doctors/'.$profile->user_id);
+
+        if ($profile->photo_path) {
+            Storage::disk(config('filesystems.default'))->delete($profile->photo_path);
+        }
+
+        $profile->forceFill(['photo_path' => $path])->save();
+    }
+
+    private function savePhoto(GdImage $source, int $maxWidth, string $directory): string
+    {
+        $width = min($maxWidth, imagesx($source));
         $height = (int) round(imagesy($source) * $width / imagesx($source));
         $canvas = imagecreatetruecolor($width, $height);
         imagecopyresampled($canvas, $source, 0, 0, 0, 0, $width, $height, imagesx($source), imagesy($source));
 
-        // PHP builds without JPEG support still get a working cover, only a larger file.
+        return $this->writeImage($canvas, $directory);
+    }
+
+    /**
+     * PHP builds without JPEG support still get a working image, only a larger file.
+     */
+    private function writeImage(GdImage $canvas, string $directory): string
+    {
         $canWriteJpeg = function_exists('imagejpeg');
 
         ob_start();
         $canWriteJpeg ? imagejpeg($canvas, null, 80) : imagepng($canvas);
-        $path = 'branding/'.$organization->id.'/'.Str::uuid().($canWriteJpeg ? '.jpg' : '.png');
+        $path = $directory.'/'.Str::uuid().($canWriteJpeg ? '.jpg' : '.png');
         Storage::disk(config('filesystems.default'))->put($path, (string) ob_get_clean());
 
-        $this->removeCover($organization);
-        $organization->forceFill(['cover_image_path' => $path])->save();
+        return $path;
     }
 
     public function removeCover(Organization $organization): void

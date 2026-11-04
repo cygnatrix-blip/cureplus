@@ -22,6 +22,8 @@ return [
     'organizations' => [
         // New organizations wait for a platform admin unless this is switched off.
         'require_approval' => (bool) env('ORG_REQUIRE_APPROVAL', true),
+        // Patients can only book a doctor whose registration has been checked.
+        'doctors_need_approval' => (bool) env('DOCTOR_REQUIRE_APPROVAL', true),
     ],
 
     /*

@@ -54,7 +54,7 @@ class PublicBookingTest extends TestCase
     {
         [, , $doctor] = $this->clinic();
 
-        $this->get('/city-clinic?date='.$this->monday->toDateString())->assertOk()->assertSee('City Clinic')->assertSee('10:15 AM');
+        $this->get('/book/city-clinic?date='.$this->monday->toDateString())->assertOk()->assertSee('City Clinic')->assertSee('10:15 AM');
         $this->get('/city-clinic/dr-roy?date='.$this->monday->toDateString())->assertOk()->assertSee('Dr Roy')->assertSee('10:15 AM');
         $this->assertNotNull($doctor);
     }
@@ -144,7 +144,7 @@ class PublicBookingTest extends TestCase
         $this->post(route('book.choose', 'city-clinic'), $this->slot($location, $doctor));
         $this->post(route('book.confirm', 'city-clinic'), ['patient_id' => $patient->id]);
 
-        $this->get('/city-clinic?date='.$this->monday->toDateString())->assertOk()->assertDontSee('10:00 AM')->assertSee('10:15 AM');
+        $this->get('/book/city-clinic?date='.$this->monday->toDateString())->assertOk()->assertDontSee('10:00 AM')->assertSee('10:15 AM');
     }
 
     public function test_a_taken_slot_gives_a_clear_message(): void
@@ -198,13 +198,13 @@ class PublicBookingTest extends TestCase
             ->assertJsonPath('name', 'City Clinic')
             ->assertJsonPath('theme_color', '#112233')
             ->assertJsonPath('start_url', '/city-clinic');
-        $this->get('/city-clinic')->assertOk()->assertSee(route('brand.manifest', 'city-clinic'));
+        $this->get('/book/city-clinic')->assertOk()->assertSee(route('brand.manifest', 'city-clinic'));
     }
 
     public function test_the_booking_page_can_show_in_hindi(): void
     {
         $this->clinic();
 
-        $this->withSession(['locale' => 'hi'])->get('/city-clinic')->assertOk()->assertSee('अपना अपॉइंटमेंट बुक करें');
+        $this->withSession(['locale' => 'hi'])->get('/book/city-clinic')->assertOk()->assertSee('अपना अपॉइंटमेंट बुक करें');
     }
 }

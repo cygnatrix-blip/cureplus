@@ -1,9 +1,4 @@
 @php
-    $tagline = $organization->branding['tagline'] ?? null;
-    $about = $organization->branding['about'] ?? null;
-    $highlights = $organization->branding['highlights'] ?? [];
-    $phone = $organization->branding['contact_phone'] ?? null;
-    $contactEmail = $organization->branding['contact_email'] ?? null;
     $query = fn (array $change) => array_filter(array_merge(['location' => $locationId, 'doctor' => $preselected ? null : $doctorId, 'date' => $date->toDateString()], $change));
     $selfRoute = fn (array $change) => $preselected ? route('booking.doctor', [$organization->slug, $preselected->doctor_slug] + $query($change)) : route('booking.show', [$organization->slug] + $query($change));
     $open = collect($slots)->where('available', true);
@@ -11,30 +6,9 @@
     $location = $locations->firstWhere('id', $locationId);
 @endphp
 <x-layouts.booking :organization="$organization">
-    {{-- Hero --}}
-    <section class="relative overflow-hidden bg-linear-to-br from-brand-800 to-brand-600 text-white">
-        @if ($organization->cover_image_path)
-            <img src="{{ route('brand.cover', $organization->slug) }}" alt="" class="absolute inset-0 h-full w-full object-cover opacity-25">
-        @endif
-        <div class="relative mx-auto max-w-6xl px-4 py-10 sm:py-14">
-            <h1 class="max-w-3xl text-3xl font-bold tracking-tight sm:text-4xl">{{ $tagline ?: __('Book your appointment at :clinic', ['clinic' => $organization->name]) }}</h1>
-            @if ($about)<p class="mt-3 max-w-2xl text-white/90">{{ $about }}</p>@endif
-            <ul class="mt-5 flex flex-wrap gap-2 text-sm">
-                @foreach ($highlights ?: [__('Confirmation by email'), __('Choose your own time'), __('Your records stay private')] as $highlight)
-                    <li class="flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 font-medium backdrop-blur"><x-icon name="check" class="h-4 w-4 text-accent-100" />{{ $highlight }}</li>
-                @endforeach
-            </ul>
-            @if ($phone || $contactEmail)
-                <div class="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/90">
-                    @if ($phone)<a class="flex items-center gap-2 hover:underline" href="tel:{{ preg_replace('/[^0-9+]/', '', $phone) }}"><x-icon name="phone" class="h-4 w-4" />{{ $phone }}</a>@endif
-                    @if ($contactEmail)<a class="flex items-center gap-2 hover:underline" href="mailto:{{ $contactEmail }}"><x-icon name="mail" class="h-4 w-4" />{{ $contactEmail }}</a>@endif
-                </div>
-            @endif
-        </div>
-    </section>
-
     <div class="mx-auto max-w-6xl px-4 py-6">
         @include('partials.flash')
+        <h1 class="mb-4 text-2xl font-bold tracking-tight text-slate-900">{{ __('Book your appointment at :clinic', ['clinic' => $organization->name]) }}</h1>
         <div class="mb-5">@include('booking.partials.steps', ['current' => 1])</div>
 
         @if ($locations->isEmpty() || ($doctors->isEmpty() && $locationId && ! $preselected))

@@ -8,7 +8,7 @@
 <body class="flex min-h-full flex-col bg-slate-50 antialiased">
     <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
-            <a href="{{ route('booking.show', $organization->slug) }}" class="flex min-w-0 items-center gap-3">
+            <a href="{{ route('clinic.home', $organization->slug) }}" class="flex min-w-0 items-center gap-3">
                 @if ($organization->icon_192_path)
                     <img src="{{ route('brand.icon', [$organization->slug, 192]) }}" alt="" class="h-10 w-10 flex-none rounded-lg object-contain">
                 @else

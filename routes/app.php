@@ -41,6 +41,7 @@ use App\Models\Invoice;
 use App\Models\Location;
 use App\Models\Membership;
 use App\Models\Patient;
+use App\Models\Prescription;
 use App\Models\Visit;
 use Illuminate\Support\Facades\Route;
 
@@ -67,6 +68,7 @@ Route::prefix('app')->name('app.')->middleware(['auth:web', 'account.active', 'n
             Route::post('/push/unsubscribe', [PushController::class, 'unsubscribe'])->middleware('throttle:30,1')->name('push.unsubscribe');
             Route::post('/account/notifications', [PushController::class, 'savePreferences'])->name('notifications.save');
             Route::post('/account/doctor-profile', [DoctorProfileController::class, 'update'])->name('doctor-profile.update');
+            Route::post('/account/doctor-photo', [DoctorProfileController::class, 'photo'])->name('doctor-profile.photo');
             Route::middleware('not-impersonating')->group(function () {
                 Route::put('/account/password', [AccountController::class, 'updatePassword'])->middleware('throttle:login')->name('account.password');
                 Route::delete('/account/sessions/{token}', [AccountController::class, 'revokeSession'])->name('account.sessions.revoke');
@@ -86,6 +88,7 @@ Route::prefix('app')->name('app.')->middleware(['auth:web', 'account.active', 'n
                 Route::get('/staff', [StaffController::class, 'index'])->can('viewAny', Membership::class)->name('staff.index');
                 Route::get('/staff/{membership}/edit', [StaffController::class, 'edit'])->can('update', 'membership')->name('staff.edit');
                 Route::put('/staff/{membership}', [StaffController::class, 'update'])->can('update', 'membership')->name('staff.update');
+                Route::post('/staff/{membership}/photo', [StaffController::class, 'photo'])->can('update', 'membership')->name('staff.photo');
                 Route::post('/staff/{membership}/deactivate', [StaffController::class, 'deactivate'])->can('update', 'membership')->name('staff.deactivate');
                 Route::post('/staff/{membership}/activate', [StaffController::class, 'activate'])->can('update', 'membership')->name('staff.activate');
 
@@ -137,6 +140,7 @@ Route::prefix('app')->name('app.')->middleware(['auth:web', 'account.active', 'n
 
                 Route::get('/visits/{visit}/prescription', [PrescriptionController::class, 'edit'])->can('prescribe', 'visit')->name('prescriptions.edit');
                 Route::put('/visits/{visit}/prescription', [PrescriptionController::class, 'update'])->can('prescribe', 'visit')->name('prescriptions.update');
+                Route::get('/prescriptions', [PrescriptionController::class, 'index'])->can('viewAny', Prescription::class)->name('prescriptions.index');
                 Route::get('/prescriptions/{prescription}', [PrescriptionController::class, 'show'])->middleware('org.approved')->can('print', 'prescription')->name('prescriptions.show');
                 Route::get('/prescriptions/{prescription}/pdf', [PrescriptionController::class, 'pdf'])->middleware('org.approved')->can('print', 'prescription')->name('prescriptions.pdf');
                 Route::post('/prescriptions/{prescription}/email', [PrescriptionController::class, 'email'])->middleware('org.approved')->can('print', 'prescription')->name('prescriptions.email');
@@ -186,7 +190,7 @@ Route::prefix('app')->name('app.')->middleware(['auth:web', 'account.active', 'n
                 Route::post('/verification/resubmit', [VerificationController::class, 'resubmit'])->can('settings.manage')->name('verification.resubmit');
                 Route::post('/verification/sample-data', [VerificationController::class, 'sampleData'])->can('settings.manage')->name('verification.sample-data');
 
-                Route::get('/settings/design/image/{kind}', [DesignController::class, 'image'])->whereIn('kind', ['logo', 'cover'])->can('settings.manage')->name('settings.design.image');
+                Route::get('/settings/design/image/{kind}', [DesignController::class, 'image'])->where('kind', 'logo|cover|gallery-[0-5]')->can('settings.manage')->name('settings.design.image');
                 Route::get('/settings/design', [DesignController::class, 'edit'])->can('settings.manage')->name('settings.design');
                 Route::put('/settings/design', [DesignController::class, 'update'])->can('settings.manage')->name('settings.design.update');
 

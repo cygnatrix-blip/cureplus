@@ -47,7 +47,7 @@ class BookingLinkController extends Controller
     private function links(): array
     {
         $organization = $this->tenant->organization();
-        $links = [['key' => 'org', 'label' => $organization->name, 'url' => route('booking.show', $organization->slug)]];
+        $links = [['key' => 'org', 'label' => $organization->name, 'url' => route('clinic.home', $organization->slug)]];
 
         // A solo practice's single link already is the doctor's link.
         if ($organization->isSolo()) {
