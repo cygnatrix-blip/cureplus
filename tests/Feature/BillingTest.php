@@ -219,6 +219,7 @@ class BillingTest extends TestCase
 
     public function test_pdf_and_email_work_and_bills_are_tenant_isolated(): void
     {
+        $this->clinicsHaveOwnEmail();
         Bus::fake();
         [$organization, $owner, $location, $patient] = $this->clinic();
         [, $stranger] = $this->clinic();
@@ -237,6 +238,7 @@ class BillingTest extends TestCase
 
     public function test_the_email_job_sends_the_pdf(): void
     {
+        $this->clinicsHaveOwnEmail();
         Mail::fake();
         [$organization, , $location, $patient] = $this->clinic();
         $invoice = $this->invoice($organization, $location, $patient);

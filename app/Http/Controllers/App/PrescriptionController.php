@@ -10,6 +10,7 @@ use App\Models\Medicine;
 use App\Models\Prescription;
 use App\Models\Visit;
 use App\Services\AuditLogger;
+use App\Services\OrganizationMail;
 use App\Services\PrescriptionPdf;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
@@ -152,12 +153,16 @@ class PrescriptionController extends Controller
         ]);
     }
 
-    public function email(Prescription $prescription, TenantContext $tenant): RedirectResponse
+    public function email(Prescription $prescription, TenantContext $tenant, OrganizationMail $mail): RedirectResponse
     {
         $prescription->load('patient:id,email');
 
         if (! $prescription->patient->email) {
             return back()->with('error', 'This patient has no email address on file.');
+        }
+
+        if (! $mail->hasOwnEmail((int) $tenant->id())) {
+            return back()->with('error', 'Connect your own email under Integrations first. Patient emails are sent from your address.');
         }
 
         SendPrescriptionEmail::dispatch((int) $tenant->id(), $prescription->id);

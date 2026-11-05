@@ -14,6 +14,7 @@ use App\Models\PushSubscription;
 use App\Models\User;
 use App\Services\Billing\FeatureGate;
 use App\Services\Billing\PlanLimits;
+use App\Services\OrganizationMail;
 use App\Support\Mask;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -30,6 +31,7 @@ class Notifier
         private readonly PushSender $push,
         private readonly PlanLimits $limits,
         private readonly FeatureGate $features,
+        private readonly OrganizationMail $mail,
     ) {}
 
     /**
@@ -59,8 +61,11 @@ class Notifier
             MessageLog::withoutTenancy()->create(['organization_id' => $organizationId, 'channel' => $channel, 'event' => $event, 'recipient_masked' => Mask::identifier($patient->mobile), 'status' => 'over_limit']);
         }
 
-        if ($patient->email) {
+        if ($patient->email && $this->mail->hasOwnEmail($organizationId)) {
             $this->queue($organizationId, 'email', $event, $patient->email, $variables, $dedupeKey);
+        } elseif ($patient->email) {
+            // Recorded so the owner can see why patients are not being emailed.
+            MessageLog::withoutTenancy()->create(['organization_id' => $organizationId, 'channel' => 'email', 'event' => $event, 'recipient_masked' => Mask::identifier($patient->email), 'status' => 'no_clinic_email']);
         }
 
         if ($account) {
@@ -76,6 +81,15 @@ class Notifier
         if (! $this->isMuted($user, $event)) {
             $this->pushTo($user, $organizationId, $event, $variables + ['name' => $user->name], $url, $dedupeKey);
         }
+    }
+
+    /**
+     * Whether a message could actually reach this patient, so staff are never told "sent" when it was not.
+     */
+    public function canReachPatient(Patient $patient): bool
+    {
+        return ($patient->email && $this->mail->hasOwnEmail((int) $patient->organization_id))
+            || $this->paidChannel((int) $patient->organization_id) !== null;
     }
 
     /**

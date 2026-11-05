@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Signup details and email separation
+
+- Signup now asks for everything approval needs: address, registration details for doctors, and a proof document for clinics. Clinic owners who see patients can say so.
+- The platform's email is only for platform business and verification. Patient email is sent from the practice's own address, or not at all.
+
 ### Access dates, email fix, Cashfree, prescription rule
 
 - Super admins can set an access end date at approval or later. After it the practice is locked out and its booking closes; changing the date restores access.

@@ -33,8 +33,10 @@ class SendInvoiceEmail implements ShouldQueue
     {
         $invoice = Invoice::query()->with('patient')->findOrFail($this->invoiceId);
 
-        if ($invoice->patient->email) {
-            $mail->mailerFor($this->organizationId)->to($invoice->patient->email)->send(new InvoiceMail($invoice, $pdf->render($invoice), $pdf->filename($invoice)));
+        $mailer = $mail->mailerFor($this->organizationId);
+
+        if ($mailer !== null && $invoice->patient->email) {
+            $mailer->to($invoice->patient->email)->send(new InvoiceMail($invoice, $pdf->render($invoice), $pdf->filename($invoice)));
         }
     }
 }

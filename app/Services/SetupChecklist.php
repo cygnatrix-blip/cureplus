@@ -26,6 +26,7 @@ class SetupChecklist
             ['label' => 'Add a doctor', 'hint' => $organization->isSolo() ? 'You are already set up as the doctor. Add colleagues here if you have any.' : 'Invite each doctor by email.', 'url' => route('app.staff.index', ['invite' => 'doctor']).'#invite', 'done' => Membership::query()->active()->whereHas('roles', fn ($query) => $query->where('key', 'doctor'))->exists()],
             ['label' => 'Set working hours', 'hint' => 'Times patients can book come from these hours.', 'url' => route('app.calendar.index'), 'done' => DoctorAvailability::query()->exists()],
             ['label' => 'Set consultation fees', 'hint' => 'Used on bills and shown on your booking page.', 'url' => route('app.billing-settings.index'), 'done' => DoctorFee::query()->exists()],
+            ['label' => 'Connect your email', 'hint' => 'Patient reminders, prescriptions and bills are sent from your own address.', 'url' => route('app.integrations.index'), 'done' => app(OrganizationMail::class)->hasOwnEmail($organization->id)],
             ['label' => 'Build your website', 'hint' => 'Add your logo, photos, services and colours.', 'url' => route('app.settings.design'), 'done' => $organization->icon_192_path !== null],
         ];
     }

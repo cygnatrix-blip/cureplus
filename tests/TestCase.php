@@ -8,10 +8,13 @@ use App\Models\Organization;
 use App\Models\PlatformAdmin;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\OrganizationMail;
 use Database\Seeders\RbacSeeder;
+use Illuminate\Contracts\Mail\Mailer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Mail;
 use Symfony\Component\Mailer\SentMessage;
 
 abstract class TestCase extends BaseTestCase
@@ -60,6 +63,25 @@ abstract class TestCase extends BaseTestCase
         $owner = $this->addMember($organization, ['owner'], location: $location);
 
         return [$organization, $owner, $location];
+    }
+
+    /**
+     * The practice has connected its own email. Goes to the test mailer, not a real server.
+     */
+    protected function clinicsHaveOwnEmail(): void
+    {
+        $this->app->instance(OrganizationMail::class, new class extends OrganizationMail
+        {
+            public function mailerFor(int $organizationId): ?Mailer
+            {
+                return Mail::mailer();
+            }
+
+            public function hasOwnEmail(int $organizationId): bool
+            {
+                return true;
+            }
+        });
     }
 
     /**

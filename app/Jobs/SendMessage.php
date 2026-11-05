@@ -53,7 +53,7 @@ class SendMessage implements ShouldBeEncrypted, ShouldQueue
         match ($this->channel) {
             'sms' => $sms->send($this->to, MessageText::render($definition['text'], $this->variables)),
             'whatsapp' => $providerId = $this->sendWhatsApp($whatsApp, $definition),
-            'email' => $this->sendEmail($mail, $definition),
+            'email' => $status = $this->sendEmail($mail, $definition),
             'push' => $status = $this->sendPush($push, $definition),
             default => throw new RuntimeException('Unknown channel.'),
         };
@@ -84,14 +84,22 @@ class SendMessage implements ShouldBeEncrypted, ShouldQueue
     /**
      * @param  array<string, mixed>  $definition
      */
-    private function sendEmail(OrganizationMail $mail, array $definition): void
+    private function sendEmail(OrganizationMail $mail, array $definition): string
     {
+        // No organization means the platform writing to a practice, with the platform's address.
         $mailer = $this->organizationId ? $mail->mailerFor($this->organizationId) : app('mailer');
+
+        // The practice may have disconnected its email while this waited in the queue.
+        if ($mailer === null) {
+            return 'no_clinic_email';
+        }
 
         $mailer->to($this->to)->send(new ClinicMessageMail(
             MessageText::render($definition['subject'], $this->variables),
             MessageText::render($definition['text'], $this->variables),
         ));
+
+        return 'sent';
     }
 
     /**

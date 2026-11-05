@@ -14,6 +14,7 @@ class LocationFactory extends Factory
     {
         return [
             'name' => fake()->streetName(),
+            'address_line' => fake()->streetAddress(),
             'city' => fake()->city(),
             'is_active' => true,
         ];

@@ -12,7 +12,9 @@ use App\Models\Organization;
 use App\Models\User;
 use App\Notifications\QueuedVerifyEmail;
 use App\Services\Captcha\TurnstileCaptcha;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class RegistrationTest extends TestCase
@@ -24,6 +26,11 @@ class RegistrationTest extends TestCase
     private function payload(array $overrides = []): array
     {
         return $overrides + [
+            'address_line' => '12 Park Road',
+            'city' => 'Kolkata',
+            'registration_number' => 'WB-12345',
+            'registration_council' => 'West Bengal Medical Council',
+            'qualification' => 'MBBS',
             'type' => 'solo_practice',
             'name' => 'Rohan Roy',
             'email' => 'Rohan@Example.test',
@@ -58,7 +65,8 @@ class RegistrationTest extends TestCase
     {
         Notification::fake();
 
-        $this->post('/register', $this->payload(['type' => 'clinic', 'organization_name' => 'City Clinic']));
+        Storage::fake('local');
+        $this->post('/register', $this->payload(['type' => 'clinic', 'organization_name' => 'City Clinic', 'document' => UploadedFile::fake()->create('proof.pdf', 100, 'application/pdf')]));
 
         $membership = Membership::withoutTenancy()->with('roles', 'organization')->firstOrFail();
         $this->assertSame(OrganizationType::Clinic, $membership->organization->type);

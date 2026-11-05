@@ -4,7 +4,7 @@
             <section class="rounded-2xl bg-emerald-50 p-5 text-center" role="status">
                 <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white"><x-icon name="check" class="h-8 w-8" /></span>
                 <h1 class="mt-3 text-xl font-bold text-emerald-900">{{ __('Your appointment is booked.') }}</h1>
-                @if ($appointment->patient?->email)<p class="text-sm text-emerald-800">{{ __('The details are on their way to your email.') }}</p>@endif
+                @if ($appointment->patient?->email && app(\App\Services\OrganizationMail::class)->hasOwnEmail((int) $appointment->organization_id))<p class="text-sm text-emerald-800">{{ __('The details are on their way to your email.') }}</p>@endif
             </section>
         @endif
         <article class="card overflow-hidden">

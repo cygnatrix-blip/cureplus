@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\OrganizationStatus;
 use App\Jobs\SendMessage;
 use App\Models\AuditLog;
+use App\Models\Location;
 use App\Models\Organization;
 use App\Models\OrganizationDocument;
 use App\Models\PlatformAdmin;
@@ -19,6 +20,7 @@ class AccessPeriodTest extends TestCase
     {
         Bus::fake([SendMessage::class]);
         $organization = Organization::factory()->pending()->create();
+        Location::factory()->create(['organization_id' => $organization->id]);
         OrganizationDocument::factory()->create(['organization_id' => $organization->id]);
         $date = today()->addMonths(6)->toDateString();
 
@@ -30,6 +32,7 @@ class AccessPeriodTest extends TestCase
     public function test_a_past_date_is_refused_when_approving(): void
     {
         $organization = Organization::factory()->pending()->create();
+        Location::factory()->create(['organization_id' => $organization->id]);
         OrganizationDocument::factory()->create(['organization_id' => $organization->id]);
 
         $this->actingAs($this->superAdmin(), 'platform')->post(route('admin.organizations.approve', $organization), ['access_until' => today()->subDay()->toDateString()])->assertSessionHasErrors('access_until');

@@ -110,6 +110,8 @@ Each of these can go in `.env` or in Super Admin, Integrations. Values saved in 
 
 Turn on 2-Step Verification on the Google account and create an App Password. Use `smtp.gmail.com`, port 587, and set a From address, because emails fail without one. **This is required, not optional: every sign-in code goes by email, so without working email nobody can sign in with a code, including patients.** Gmail sends about 500 messages a day, and Monitoring warns at 80%. Every sign-in uses one, so move to SES or ZeptoMail before you have many patients.
 
+**This email is for the platform only:** sign-in and verification codes, invitations, and messages between you and practices. Each practice connects its own email under Integrations for patient reminders, prescriptions and bills. Until it does, its patients get no email. Check `upload_max_filesize` is at least 6M, because signups attach documents of up to 5 MB.
+
 ### SMS
 
 Optional. SMS only carries reminders and notices; sign-in codes go by email. Set the driver to `http` with the gateway's URL and token, or add a provider class (see Architecture §13). The gateway must accept a JSON body with `to`, `sender` and `message`.

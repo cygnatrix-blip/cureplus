@@ -63,8 +63,15 @@
 
         <form method="POST" action="{{ route('app.integrations.smtp') }}" class="card card-body space-y-3">
             @csrf
-            <h2 class="font-semibold text-slate-900">Your own email (optional)</h2>
-            <p class="text-sm text-slate-600">Send patient emails from your own Gmail or Workspace address. Use an App Password, not your normal password. Without this, the platform's email is used.</p>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <h2 class="font-semibold text-slate-900">Your email for patients</h2>
+                <span @class(['badge', 'badge-green' => $smtp?->is_enabled, 'badge-amber' => ! $smtp?->is_enabled])>{{ $smtp?->is_enabled ? 'Connected' : 'Not connected' }}</span>
+            </div>
+            <p class="text-sm text-slate-600">Reminders, prescriptions, bills and other patient emails are sent from your own address, so patients recognise you and replies come to you. <strong>Until this is connected, patients get no email from your practice.</strong> Sign-in and verification codes are sent by CurePlus either way.</p>
+            @if (! $smtp?->is_enabled && $emailsNotSent > 0)
+                <p class="rounded-lg bg-amber-50 p-3 text-sm text-amber-900" role="alert">{{ $emailsNotSent }} {{ \Illuminate\Support\Str::plural('email', $emailsNotSent) }} to your patients could not be sent in the last 30 days because this is not connected.</p>
+            @endif
+            <p class="text-sm text-slate-600">For Gmail: turn on 2-Step Verification, then create an App Password in your Google Account, and paste it below. Do not use your normal password.</p>
             <div class="grid gap-3 sm:grid-cols-2">
                 <x-field name="host" label="SMTP host" :value="$smtp?->config['host'] ?? 'smtp.gmail.com'" />
                 <x-field name="port" label="Port" type="number" :value="$smtp?->config['port'] ?? 587" />

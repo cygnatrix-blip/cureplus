@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\App;
 
 use App\Http\Controllers\Controller;
+use App\Models\MessageLog;
 use App\Models\OrganizationIntegration;
 use App\Services\AuditLogger;
 use App\Services\OrganizationMail;
@@ -28,6 +29,7 @@ class IntegrationController extends Controller
             'cashfree' => $integrations->get('cashfree'),
             'cashfreeWebhookUrl' => route('webhooks.cashfree', $this->tenant->organization()->uuid),
             'smtp' => $integrations->get('smtp'),
+            'emailsNotSent' => MessageLog::withoutTenancy()->where('organization_id', $this->tenant->id())->where('status', 'no_clinic_email')->where('created_at', '>=', now()->subDays(30))->count(),
             'whatsapp' => $integrations->get('whatsapp'),
             'webhookUrl' => route('webhooks.razorpay', $this->tenant->organization()->uuid),
         ]);
@@ -123,7 +125,11 @@ class IntegrationController extends Controller
         $integration = OrganizationIntegration::query()->where('kind', 'smtp')->first();
 
         try {
-            $mailer = $integration ? $mail->build($integration->config) : $mail->mailerFor((int) $this->tenant->id());
+            if ($integration === null) {
+                return back()->with('error', 'Save your email details first.');
+            }
+
+            $mailer = $mail->build($integration->config);
             $mailer->raw('This is a test email from '.config('app.name').'.', fn ($message) => $message->to($data['to'])->subject('Test email'));
         } catch (Throwable) {
             // The transport's message can echo credentials, so it stays out of the page.

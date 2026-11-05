@@ -45,11 +45,11 @@ class OrganizationApprovalTest extends TestCase
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, mixed>
      */
     private function signup(): array
     {
-        return ['type' => 'clinic', 'organization_name' => 'New Clinic', 'name' => 'Asha Sen', 'email' => 'asha@example.test', 'mobile' => '9812345678', 'password' => 'Password123', 'password_confirmation' => 'Password123', 'terms' => '1'];
+        return ['address_line' => '12 Park Road', 'city' => 'Kolkata', 'document' => UploadedFile::fake()->create('proof.pdf', 100, 'application/pdf'), 'type' => 'clinic', 'organization_name' => 'New Clinic', 'name' => 'Asha Sen', 'email' => 'asha@example.test', 'mobile' => '9812345678', 'password' => 'Password123', 'password_confirmation' => 'Password123', 'terms' => '1'];
     }
 
     public function test_a_signup_waits_for_verification_and_tells_the_super_admin(): void
@@ -58,6 +58,7 @@ class OrganizationApprovalTest extends TestCase
         PlatformAdmin::factory()->create(['email' => 'boss@example.test', 'role' => 'super_admin']);
         PlatformAdmin::factory()->create(['email' => 'sales@example.test', 'role' => 'sales']);
 
+        Storage::fake('local');
         $this->post('/register', $this->signup())->assertRedirect();
 
         $this->assertSame(OrganizationStatus::PendingVerification, Organization::query()->firstOrFail()->status);

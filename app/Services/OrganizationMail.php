@@ -9,21 +9,29 @@ use Illuminate\Support\Facades\Mail;
 class OrganizationMail
 {
     /**
-     * The organization's own SMTP if it set one up, otherwise the platform's mailer.
+     * Email to a practice's patients goes out from the practice's own address, or not at all.
+     * The platform's address is only for the platform's own business with practices, and for
+     * sign-in and verification codes. It must never appear to be writing to a clinic's patients.
      */
-    public function mailerFor(int $organizationId): Mailer
+    public function mailerFor(int $organizationId): ?Mailer
     {
-        $integration = OrganizationIntegration::withoutTenancy()
+        $integration = $this->integration($organizationId);
+
+        return $integration === null ? null : $this->build($integration->config);
+    }
+
+    public function hasOwnEmail(int $organizationId): bool
+    {
+        return $this->integration($organizationId) !== null;
+    }
+
+    private function integration(int $organizationId): ?OrganizationIntegration
+    {
+        return OrganizationIntegration::withoutTenancy()
             ->where('organization_id', $organizationId)
             ->where('kind', 'smtp')
             ->where('is_enabled', true)
             ->first();
-
-        if ($integration === null) {
-            return Mail::mailer();
-        }
-
-        return $this->build($integration->config);
     }
 
     /**
@@ -40,8 +48,11 @@ class OrganizationMail
             'timeout' => 15,
         ]);
 
-        if (! empty($config['from_address'])) {
-            $mailer->alwaysFrom((string) $config['from_address'], (string) ($config['from_name'] ?? config('app.name')));
+        // Never the platform's address. Gmail also rewrites a From that is not the signed-in account.
+        $from = $config['from_address'] ?? null ?: $config['username'] ?? null;
+
+        if (! empty($from)) {
+            $mailer->alwaysFrom((string) $from, (string) ($config['from_name'] ?? null ?: $from));
         }
 
         return $mailer;

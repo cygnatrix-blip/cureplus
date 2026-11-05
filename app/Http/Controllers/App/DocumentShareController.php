@@ -27,7 +27,13 @@ class DocumentShareController extends Controller
 
     private function share(int $patientId, string $document, string $link): RedirectResponse
     {
-        $this->notifier->notifyPatient(Patient::query()->findOrFail($patientId), 'document_ready', [
+        $patient = Patient::query()->findOrFail($patientId);
+
+        if (! $this->notifier->canReachPatient($patient)) {
+            return back()->with('error', 'We have no way to send this yet. Connect your email under Integrations, or download it and hand it to the patient.');
+        }
+
+        $this->notifier->notifyPatient($patient, 'document_ready', [
             'document' => $document,
             'clinic' => $this->tenant->organization()->name,
             'link' => $link,

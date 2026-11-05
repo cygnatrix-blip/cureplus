@@ -15,7 +15,6 @@ use App\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
@@ -75,21 +74,7 @@ class VerificationController extends Controller
             'document.uploaded' => 'This file is too large for the server to accept. Please send a smaller one.',
         ]);
 
-        $file = $request->file('document');
-        $extension = (string) $file->guessExtension();
-        $path = 'verification/'.$this->tenant->id().'/'.Str::uuid().'.'.$extension;
-
-        Storage::disk(config('filesystems.default'))->put($path, (string) file_get_contents($file->getRealPath()));
-
-        OrganizationDocument::create([
-            'organization_id' => $this->tenant->id(),
-            'type' => $request->input('type'),
-            'path' => $path,
-            'original_name' => Str::limit($file->getClientOriginalName(), 200, ''),
-            'mime_type' => (string) $file->getMimeType(),
-            'size_bytes' => (int) $file->getSize(),
-            'uploaded_by' => $request->user()->id,
-        ]);
+        $this->verification->storeDocument($this->tenant->organization(), $request->file('document'), (string) $request->input('type'), $request->user()->id);
 
         return back()->with('success', 'Document uploaded.');
     }

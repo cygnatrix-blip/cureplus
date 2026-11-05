@@ -125,7 +125,7 @@
                 <div class="relative overflow-hidden bg-linear-to-br from-brand-800 to-brand-600 p-5 text-white">
                     <img x-show="hasCover" :src="cover" alt="" class="absolute inset-0 h-full w-full object-cover opacity-25">
                     <p class="relative text-xl font-bold" x-text="previewTagline"></p>
-                    <p class="relative mt-3 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium"><span class="h-2 w-2 rounded-full bg-accent-500"></span>Confirmation by email</p>
+                    <p class="relative mt-3 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium"><span class="h-2 w-2 rounded-full bg-accent-500"></span>Online booking</p>
                 </div>
                 <div class="space-y-3 p-4">
                     <div class="card flex items-center gap-3 p-3">

@@ -232,6 +232,7 @@ class ConsultationTest extends TestCase
 
     public function test_pdf_download_and_email_work(): void
     {
+        $this->clinicsHaveOwnEmail();
         Bus::fake();
         [, , $doctor, , $visit] = $this->consultation();
         $this->actingAs($doctor, 'web')->put(route('app.prescriptions.update', $visit), $this->rx());
@@ -246,6 +247,7 @@ class ConsultationTest extends TestCase
 
     public function test_the_email_job_restores_the_tenant_and_attaches_the_pdf(): void
     {
+        $this->clinicsHaveOwnEmail();
         Mail::fake();
         [$organization, , $doctor, , $visit] = $this->consultation();
         $this->actingAs($doctor, 'web')->put(route('app.prescriptions.update', $visit), $this->rx());

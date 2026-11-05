@@ -38,8 +38,19 @@ Alpine.data('toast', () => ({
 
 Alpine.data('registerType', () => ({
     type: 'solo_practice',
+    ownerIsDoctor: false,
     init() {
         this.type = this.$el.dataset.initial || 'solo_practice';
+        this.ownerIsDoctor = this.$el.dataset.ownerDoctor === '1';
+    },
+    toggleOwnerDoctor(event) {
+        this.ownerIsDoctor = event.target.checked;
+    },
+    get isDoctorType() {
+        return this.type !== 'clinic';
+    },
+    get needsDoctorDetails() {
+        return this.type !== 'clinic' || this.ownerIsDoctor;
     },
     pickSolo() {
         this.type = 'solo_practice';

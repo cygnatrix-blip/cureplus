@@ -334,6 +334,10 @@ To render a PDF there, the tenant is set just for that call: `$tenant->run($orga
 
 **Who changes a medical record:** only the doctor on the visit (`VisitPolicy`). Owners can read consultations and prescriptions but not write, complete, add vitals or start a consultation, unless they are that patient's doctor. Nurses still record vitals.
 
+**Who sends which email:** the platform's SMTP sends sign-in and verification codes, password resets, invitations, and messages between the platform and practices. Patient email (reminders, prescriptions, bills, payment links) only goes through the practice's own SMTP (`OrganizationMail::mailerFor`), which returns null rather than falling back. A skipped email is logged as `no_clinic_email`, and `Notifier::canReachPatient` stops staff being told something was sent when it was not.
+
+**Signup collects what approval needs:** `RegisterController` asks for the address, plus registration details for doctors and a proof document for clinics, so `OrganizationVerification::isComplete` is normally true at once.
+
 **Booking never matches on mobile.** It reuses a clinic's record only when the proved email and the name both match. Otherwise knowing someone's name and number would attach a stranger's login to their record, so a mismatch makes a new record for the clinic to review.
 
 **Per-clinic design:** colours, corners, logo, cover photo, tagline, about text, highlights, contact details and whether fees show are stored in `organizations.branding`, `brand_color` and `cover_image_path`, and edited at `/app/settings/design`. Layout and flow are shared by everyone. `BrandTheme` turns the colours into `--color-brand-*` and `--color-accent-*` overrides of the Tailwind theme, darkening the button shade until white text reaches 4.5:1 contrast. Values are validated as `#rrggbb` on save and checked again on output, because they go into a nonce-protected style block on public pages. Uploads are re-encoded by `BrandingService`. `PortalBrand` decides whose look the patient pages wear: the custom domain, else the clinic remembered in the session from its booking page, else the patient's only clinic, else the neutral look.

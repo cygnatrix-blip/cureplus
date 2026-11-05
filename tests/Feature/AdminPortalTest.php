@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\OrganizationStatus;
 use App\Models\AuditLog;
+use App\Models\Location;
 use App\Models\Organization;
 use App\Models\OrganizationDocument;
 use App\Models\PlatformAdmin;
@@ -17,6 +18,7 @@ class AdminPortalTest extends TestCase
     public function test_approve_and_suspend_with_a_reason_are_audited(): void
     {
         $organization = Organization::factory()->pending()->create();
+        Location::factory()->create(['organization_id' => $organization->id]);
         OrganizationDocument::factory()->create(['organization_id' => $organization->id]);
         $this->actingAs($this->superAdmin(), 'platform');
 

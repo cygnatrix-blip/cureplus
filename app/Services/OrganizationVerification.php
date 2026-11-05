@@ -5,15 +5,19 @@ namespace App\Services;
 use App\Enums\OrganizationStatus;
 use App\Exceptions\VerificationIncompleteException;
 use App\Models\DoctorProfile;
+use App\Models\Location;
 use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\OrganizationDocument;
 use App\Models\PlatformAdmin;
 use App\Services\Billing\SubscriptionService;
 use App\Services\Messaging\Notifier;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * The approval workflow: pending_verification, then approved or rejected, and a rejected
@@ -35,7 +39,11 @@ class OrganizationVerification
      */
     public function requirements(Organization $organization): array
     {
-        $requirements = [];
+        $requirements = [[
+            'key' => 'address',
+            'label' => ($organization->isSolo() ? 'Chamber' : 'Clinic').' address',
+            'done' => Location::withoutTenancy()->where('organization_id', $organization->id)->where('is_active', true)->whereNotNull('address_line')->whereNotNull('city')->exists(),
+        ]];
 
         foreach ($this->owners($organization) as $owner) {
             if ($owner->hasRole('doctor')) {
@@ -57,6 +65,26 @@ class OrganizationVerification
         }
 
         return $requirements;
+    }
+
+    /**
+     * Stored privately under a generated name. The type comes from the file's contents.
+     */
+    public function storeDocument(Organization $organization, UploadedFile $file, string $type, int $uploadedBy): OrganizationDocument
+    {
+        $path = 'verification/'.$organization->id.'/'.Str::uuid().'.'.$file->guessExtension();
+
+        Storage::disk(config('filesystems.default'))->put($path, (string) file_get_contents($file->getRealPath()));
+
+        return OrganizationDocument::withoutTenancy()->create([
+            'organization_id' => $organization->id,
+            'type' => $type,
+            'path' => $path,
+            'original_name' => Str::limit($file->getClientOriginalName(), 200, ''),
+            'mime_type' => (string) $file->getMimeType(),
+            'size_bytes' => (int) $file->getSize(),
+            'uploaded_by' => $uploadedBy,
+        ]);
     }
 
     public function isComplete(Organization $organization): bool

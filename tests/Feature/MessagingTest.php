@@ -104,6 +104,7 @@ class MessagingTest extends TestCase
 
     public function test_email_is_added_when_the_patient_has_an_address(): void
     {
+        $this->clinicsHaveOwnEmail();
         Mail::fake();
         [, , , , $patient] = $this->clinic(['email' => 'ravi@example.test']);
 
@@ -113,8 +114,9 @@ class MessagingTest extends TestCase
         $this->assertCount(1, $this->sms->sent);
     }
 
-    public function test_in_production_without_a_gateway_patients_still_get_email(): void
+    public function test_in_production_without_a_gateway_patients_still_get_the_clinics_email(): void
     {
+        $this->clinicsHaveOwnEmail();
         Mail::fake();
         $this->app->detectEnvironment(fn () => 'production');
         config(['cureplus.sms.driver' => 'http', 'cureplus.sms.http.url' => null]);

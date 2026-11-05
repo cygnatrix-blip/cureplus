@@ -33,8 +33,10 @@ class SendPrescriptionEmail implements ShouldQueue
     {
         $prescription = Prescription::query()->with('patient')->findOrFail($this->prescriptionId);
 
-        if ($prescription->patient->email) {
-            $mail->mailerFor($this->organizationId)->to($prescription->patient->email)->send(new PrescriptionMail($prescription, $pdf->render($prescription), $pdf->filename($prescription)));
+        $mailer = $mail->mailerFor($this->organizationId);
+
+        if ($mailer !== null && $prescription->patient->email) {
+            $mailer->to($prescription->patient->email)->send(new PrescriptionMail($prescription, $pdf->render($prescription), $pdf->filename($prescription)));
         }
     }
 }

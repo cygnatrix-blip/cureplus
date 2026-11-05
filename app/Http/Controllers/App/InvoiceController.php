@@ -15,6 +15,7 @@ use App\Services\Billing\BillingService;
 use App\Services\Billing\FeeResolver;
 use App\Services\Billing\InvoicePdf;
 use App\Services\Messaging\Notifier;
+use App\Services\OrganizationMail;
 use App\Services\Payments\GatewayFactory;
 use App\Services\TenantDoctors;
 use App\Support\Csv;
@@ -157,12 +158,16 @@ class InvoiceController extends Controller
         ]);
     }
 
-    public function email(Invoice $invoice): RedirectResponse
+    public function email(Invoice $invoice, OrganizationMail $mail): RedirectResponse
     {
         $invoice->load('patient:id,email');
 
         if (! $invoice->patient->email) {
             return back()->with('error', 'This patient has no email address on file.');
+        }
+
+        if (! $mail->hasOwnEmail((int) $this->tenant->id())) {
+            return back()->with('error', 'Connect your own email under Integrations first. Patient emails are sent from your address.');
         }
 
         SendInvoiceEmail::dispatch((int) $this->tenant->id(), $invoice->id);
@@ -197,7 +202,13 @@ class InvoiceController extends Controller
             return back()->with('error', $exception->getMessage());
         }
 
-        $notifier->notifyPatient(Patient::query()->findOrFail($invoice->patient_id), 'payment_link', [
+        $patient = Patient::query()->findOrFail($invoice->patient_id);
+
+        if (! $notifier->canReachPatient($patient)) {
+            return back()->with('success', 'Payment link created, but it could not be sent: connect your email under Integrations. For now, share this link yourself: '.$payment->gateway_link_url);
+        }
+
+        $notifier->notifyPatient($patient, 'payment_link', [
             'amount' => Money::format($payment->amount_paise),
             'clinic' => $this->tenant->organization()->name,
             'link' => (string) $payment->gateway_link_url,
