@@ -23,6 +23,8 @@ class MedicineResource extends JsonResource
             'strength' => $this->strength,
             'form' => $this->form,
             'manufacturer' => $this->manufacturer,
+            'system' => $this->system,
+            'specialty' => $this->specialty,
         ];
     }
 }

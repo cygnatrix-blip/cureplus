@@ -8,6 +8,8 @@ return [
     'bedtime' => 'सोते समय',
     'days' => ':count दिन',
     'medicines' => 'दवाइयाँ',
+    'plan' => 'उपचार योजना',
+    'teleconsultation' => 'वीडियो परामर्श',
     'instructions' => 'निर्देश',
     'follow_up' => 'दोबारा दिखाएँ',
     'tests' => 'जाँच की सलाह',

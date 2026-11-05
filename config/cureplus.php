@@ -16,7 +16,14 @@ return [
 
     // Suggestions on the verification form. A doctor can type another.
     'medical_councils' => [
-        'National Medical Commission', 'Andhra Pradesh Medical Council', 'Arunachal Pradesh Medical Council', 'Assam Medical Council', 'Bihar Medical Council', 'Chhattisgarh Medical Council', 'Delhi Medical Council', 'Goa Medical Council', 'Gujarat Medical Council', 'Haryana Medical Council', 'Himachal Pradesh Medical Council', 'Jammu and Kashmir Medical Council', 'Jharkhand Medical Council', 'Karnataka Medical Council', 'Kerala (Travancore Cochin) Medical Council', 'Madhya Pradesh Medical Council', 'Maharashtra Medical Council', 'Manipur Medical Council', 'Meghalaya Medical Council', 'Mizoram Medical Council', 'Nagaland Medical Council', 'Odisha Council of Medical Registration', 'Punjab Medical Council', 'Rajasthan Medical Council', 'Sikkim Medical Council', 'Tamil Nadu Medical Council', 'Telangana State Medical Council', 'Tripura State Medical Council', 'Uttar Pradesh Medical Council', 'Uttarakhand Medical Council', 'West Bengal Medical Council',
+        'National Medical Commission', 'National Commission for Indian System of Medicine', 'National Commission for Homoeopathy', 'National Commission for Allied and Healthcare Professions', 'State Dental Council', 'State Board of Indian Medicine (Ayurveda, Unani, Siddha)', 'State Homoeopathic Council', 'State Board of Yoga and Naturopathy', 'State Allied and Healthcare Council', 'Indian Dietetic Association', 'Andhra Pradesh Medical Council', 'Arunachal Pradesh Medical Council', 'Assam Medical Council', 'Bihar Medical Council', 'Chhattisgarh Medical Council', 'Delhi Medical Council', 'Goa Medical Council', 'Gujarat Medical Council', 'Haryana Medical Council', 'Himachal Pradesh Medical Council', 'Jammu and Kashmir Medical Council', 'Jharkhand Medical Council', 'Karnataka Medical Council', 'Kerala (Travancore Cochin) Medical Council', 'Madhya Pradesh Medical Council', 'Maharashtra Medical Council', 'Manipur Medical Council', 'Meghalaya Medical Council', 'Mizoram Medical Council', 'Nagaland Medical Council', 'Odisha Council of Medical Registration', 'Punjab Medical Council', 'Rajasthan Medical Council', 'Sikkim Medical Council', 'Tamil Nadu Medical Council', 'Telangana State Medical Council', 'Tripura State Medical Council', 'Uttar Pradesh Medical Council', 'Uttarakhand Medical Council', 'West Bengal Medical Council',
+    ],
+
+    'video' => [
+        // Free, with nothing to set up. Point this at your own Jitsi server if you ever run one.
+        'jitsi_url' => env('VIDEO_JITSI_URL', 'https://meet.jit.si'),
+        // How long a patient has to pay for a video call they booked before the slot is released.
+        'pay_within_minutes' => (int) env('VIDEO_PAY_WITHIN_MINUTES', 30),
     ],
 
     'organizations' => [

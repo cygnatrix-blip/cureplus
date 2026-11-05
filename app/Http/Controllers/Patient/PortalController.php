@@ -117,6 +117,8 @@ class PortalController extends Controller
         $gateway = $gateways->forOrganization($organization->id);
 
         abort_if($gateway === null, 404);
+        // A cancelled appointment has nothing left to pay for, so no money is taken for it.
+        abort_unless($appointment->status->holdsSlot(), 422);
 
         $invoice = Invoice::withoutTenancy()->where('appointment_id', $appointment->id)->where('status', '!=', 'cancelled')->first();
 

@@ -171,5 +171,19 @@
     "Your health, in one place": "আপনার স্বাস্থ্য, এক জায়গায়",
     "Your records stay private": "আপনার রেকর্ড গোপন থাকে",
     "Your requests": "আপনার অনুরোধ",
-    "Your turn in the queue": "লাইনে আপনার পালা"
+    "Your turn in the queue": "লাইনে আপনার পালা",
+    "How would you like to meet?": "আপনি কীভাবে দেখা করতে চান?",
+    "At the clinic": "ক্লিনিকে",
+    "Video call": "ভিডিও কল",
+    "Video calls available": "ভিডিও কল পাওয়া যায়",
+    "Book a video call": "ভিডিও কল বুক করুন",
+    "Join video call": "ভিডিও কলে যোগ দিন",
+    "Where": "কোথায়",
+    "All": "সব",
+    "Pay now": "এখনই পেমেন্ট করুন",
+    "Pay to confirm your video call": "আপনার ভিডিও কল নিশ্চিত করতে পেমেন্ট করুন",
+    "Your time is held. Please pay to confirm it.": "আপনার সময় ধরে রাখা হয়েছে। নিশ্চিত করতে অনুগ্রহ করে পেমেন্ট করুন।",
+    "We are holding this time for you until :time. You will get the link to join as soon as your payment reaches us.": "আমরা এই সময়টি :time পর্যন্ত আপনার জন্য ধরে রাখছি। পেমেন্ট পেলেই আপনি যোগ দেওয়ার লিঙ্ক পাবেন।",
+    "You will get a link to join. The call runs on Jitsi or Google Meet, not on this site, and we do not record it.": "আপনি যোগ দেওয়ার লিঙ্ক পাবেন। কলটি এই সাইটে নয়, Jitsi বা Google Meet-এ হয়, এবং আমরা এটি রেকর্ড করি না।",
+    "Join at your appointment time, and allow your camera and microphone. If it says you are waiting, stay on the page until the doctor joins. Your phone may offer to open an app, which is free.": "অ্যাপয়েন্টমেন্টের সময় যোগ দিন এবং ক্যামেরা ও মাইক্রোফোনের অনুমতি দিন। অপেক্ষা করতে বললে ডাক্তার যোগ না দেওয়া পর্যন্ত পেজে থাকুন। আপনার ফোন একটি অ্যাপ খুলতে বলতে পারে, যা বিনামূল্যে।"
 }

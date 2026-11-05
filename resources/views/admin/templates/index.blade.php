@@ -4,7 +4,7 @@
             @csrf
             <h2 class="font-semibold text-slate-900">New EMR template</h2>
             <div class="grid gap-3 sm:grid-cols-2">
-                <x-field name="specialty" label="Specialty" required />
+                <x-specialty-select required />
                 <x-field name="name" label="Name" required />
             </div>
             @foreach (['complaints' => 'Complaints', 'history' => 'History', 'diagnosis' => 'Diagnosis'] as $field => $label)

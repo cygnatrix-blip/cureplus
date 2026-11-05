@@ -1,5 +1,5 @@
 @php
-    $query = fn (array $change) => array_filter(array_merge(['location' => $locationId, 'doctor' => $preselected ? null : $doctorId, 'date' => $date->toDateString()], $change));
+    $query = fn (array $change) => array_filter(array_merge(['location' => $locationId, 'mode' => $wantsVideo ? 'online' : null, 'specialty' => $specialty, 'doctor' => $preselected ? null : $doctorId, 'date' => $date->toDateString()], $change));
     $selfRoute = fn (array $change) => $preselected ? route('booking.doctor', [$organization->slug, $preselected->doctor_slug] + $query($change)) : route('booking.show', [$organization->slug] + $query($change));
     $open = collect($slots)->where('available', true);
     $groups = ['Morning' => $open->filter(fn ($slot) => $slot['starts_at']->hour < 12), 'Afternoon' => $open->filter(fn ($slot) => $slot['starts_at']->hour >= 12 && $slot['starts_at']->hour < 17), 'Evening' => $open->filter(fn ($slot) => $slot['starts_at']->hour >= 17)];
@@ -37,6 +37,14 @@
                     @if ($locationId && ! $preselected && $doctors->count() > 1)
                         <section aria-labelledby="choose-doctor">
                             <h2 id="choose-doctor" class="mb-3 text-lg font-semibold text-slate-900">{{ __('Choose a doctor') }}</h2>
+                            @if ($specialties->count() > 1)
+                                <div class="mb-3 flex flex-wrap gap-2">
+                                    <a href="{{ $selfRoute(['specialty' => null, 'doctor' => null, 'date' => null]) }}" @class(['badge', 'badge-slate' => $specialty !== null, 'bg-brand-600 text-white' => $specialty === null])>{{ __('All') }}</a>
+                                    @foreach ($specialties as $option)
+                                        <a href="{{ $selfRoute(['specialty' => $option, 'doctor' => null, 'date' => null]) }}" @class(['badge', 'badge-slate' => $specialty !== $option, 'bg-brand-600 text-white' => $specialty === $option])>{{ $option }}</a>
+                                    @endforeach
+                                </div>
+                            @endif
                             <div class="grid gap-3 sm:grid-cols-2">
                                 @foreach ($doctors as $doctor)
                                     <a href="{{ $selfRoute(['doctor' => $doctor['id'], 'date' => null]) }}" @class(['card flex items-center gap-4 p-4 transition hover:shadow-md', 'border-brand-600 ring-2 ring-brand-600' => (int) $doctorId === $doctor['id']])>
@@ -45,6 +53,7 @@
                                             <span class="flex items-center gap-1 font-semibold text-slate-900"><span class="truncate">{{ $doctor['name'] }}</span>@if ($doctor['verified'])<x-icon name="badge" class="h-4 w-4 flex-none text-brand-600" /><span class="sr-only">{{ __('Verified') }}</span>@endif</span>
                                             @if ($doctor['specialty'])<span class="block truncate text-sm text-slate-600">{{ $doctor['specialty'] }}</span>@endif
                                             @if ($doctor['qualification'])<span class="block truncate text-xs text-slate-500">{{ $doctor['qualification'] }}</span>@endif
+                                            @if ($doctor['offers_video'])<span class="mt-1 flex items-center gap-1 text-xs font-medium text-brand-700"><x-icon name="video" class="h-4 w-4" />{{ __('Video calls available') }}</span>@endif
                                             @if ($doctor['fee'])<span class="mt-1 block text-sm font-semibold text-slate-900">{{ $doctor['fee'] }}</span>@endif
                                         </span>
                                     </a>
@@ -67,6 +76,15 @@
                     {{-- Date and time --}}
                     @if ($canShowSlots)
                         <section aria-labelledby="choose-time" class="card p-4 sm:p-5">
+                            @if ($selectedDoctor['offers_video'] ?? false)
+                                <fieldset class="mb-5">
+                                    <legend class="mb-2 text-lg font-semibold text-slate-900">{{ __('How would you like to meet?') }}</legend>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <label class="flex min-h-13 cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white p-3 text-sm font-medium has-checked:border-brand-600 has-checked:bg-brand-50"><input type="radio" name="mode" value="in_person" form="slot-form" @checked(! $wantsVideo)><x-icon name="pin" class="h-5 w-5 flex-none text-brand-600" />{{ __('At the clinic') }}</label>
+                                        <label class="flex min-h-13 cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white p-3 text-sm font-medium has-checked:border-brand-600 has-checked:bg-brand-50"><input type="radio" name="mode" value="online" form="slot-form" @checked($wantsVideo)><x-icon name="video" class="h-5 w-5 flex-none text-brand-600" />{{ __('Video call') }}</label>
+                                    </div>
+                                </fieldset>
+                            @endif
                             <h2 id="choose-time" class="text-lg font-semibold text-slate-900">{{ __('Choose a date and time') }}</h2>
                             <div class="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-2 [scrollbar-width:thin]">
                                 @foreach ($days as $day)
@@ -80,7 +98,7 @@
                             @if ($open->isEmpty())
                                 <p class="mt-4 rounded-lg bg-slate-50 p-4 text-center text-sm text-slate-600">{{ __('No times are available on this day. Please try another date.') }}</p>
                             @else
-                                <form method="POST" action="{{ route('book.choose', $organization->slug) }}" class="mt-3 space-y-4">
+                                <form method="POST" id="slot-form" action="{{ route('book.choose', $organization->slug) }}" class="mt-3 space-y-4">
                                     @csrf
                                     <input type="hidden" name="location_id" value="{{ $locationId }}">
                                     <input type="hidden" name="doctor_user_id" value="{{ $doctorId }}">

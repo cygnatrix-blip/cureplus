@@ -28,7 +28,7 @@ class RegistrationTest extends TestCase
         return $overrides + [
             'address_line' => '12 Park Road',
             'city' => 'Kolkata',
-            'registration_number' => 'WB-12345',
+            'registration_number' => 'WB-12345', 'specialty' => 'General Physician',
             'registration_council' => 'West Bengal Medical Council',
             'qualification' => 'MBBS',
             'type' => 'solo_practice',

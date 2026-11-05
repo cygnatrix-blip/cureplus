@@ -22,7 +22,10 @@ class OrganizationDocument extends Model
     /** @use HasFactory<OrganizationDocumentFactory> */
     use Auditable, BelongsToOrganization, HasFactory;
 
+    public const PROFESSIONAL_CERTIFICATE = 'professional_certificate';
+
     public const TYPES = [
+        self::PROFESSIONAL_CERTIFICATE => 'Degree or membership certificate (allied health)',
         'doctor_registration' => 'Doctor registration certificate',
         'clinic_proof' => 'Clinic proof (licence, rent agreement, GST certificate or utility bill)',
         'other' => 'Other supporting document',

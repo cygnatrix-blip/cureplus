@@ -89,7 +89,7 @@ class SubscriptionTest extends TestCase
 
         $this->post('/register', [
             'type' => 'solo_practice', 'name' => 'Rohan Roy', 'email' => 'r@example.test', 'mobile' => '9812345678',
-            'address_line' => '12 Park Road', 'city' => 'Kolkata', 'registration_number' => 'WB-1', 'registration_council' => 'West Bengal Medical Council', 'qualification' => 'MBBS',
+            'address_line' => '12 Park Road', 'city' => 'Kolkata', 'registration_number' => 'WB-1', 'specialty' => 'General Physician', 'registration_council' => 'West Bengal Medical Council', 'qualification' => 'MBBS',
             'password' => 'Password123', 'password_confirmation' => 'Password123', 'terms' => '1',
         ]);
 

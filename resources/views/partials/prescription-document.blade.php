@@ -6,16 +6,19 @@
         <div>
             <p class="font-semibold">{{ $prescription->doctor_name }}</p>
             <p>{{ $prescription->doctor_qualification }}</p>
-            <p>Reg. no. {{ $prescription->doctor_registration_number ?? 'Not provided' }}</p>
+            @if ($prescription->doctor_specialty)<p>{{ $prescription->doctor_specialty }}</p>@endif
+            @php($isAlliedPlan = \App\Support\Specialties::isAllied($prescription->doctor_specialty))
+            @if ($prescription->doctor_registration_number || ! $isAlliedPlan)<p>Reg. no. {{ $prescription->doctor_registration_number ?? 'Not provided' }}</p>@endif
         </div>
         <div class="text-right">
             <p class="font-semibold">{{ $prescription->patient->name }}</p>
             <p>{{ $prescription->patient->patient_code }} · {{ $prescription->patient->ageInYears() }} yrs</p>
             <p>{{ $prescription->issued_at?->format('d M Y') }}</p>
+            @if ($prescription->is_teleconsultation)<p>{{ __('rx.teleconsultation', [], $language) }}</p>@endif
         </div>
     </div>
     @if ($prescription->visit?->diagnosis)<p class="mt-3 text-sm"><strong>Diagnosis:</strong> {{ $prescription->visit->diagnosis }}</p>@endif
-    <h3 class="mt-4 text-lg font-semibold">℞ {{ __('rx.medicines', [], $language) }}</h3>
+    <h3 class="mt-4 text-lg font-semibold">{{ $isAlliedPlan ? __('rx.plan', [], $language) : '℞ '.__('rx.medicines', [], $language) }}</h3>
     <ol class="mt-2 list-decimal space-y-2 pl-5 text-sm">
         @foreach ($prescription->items as $item)
             <li>

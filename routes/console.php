@@ -13,6 +13,7 @@ use App\Services\Billing\SubscriptionService;
 use App\Services\Domains\DomainService;
 use App\Services\Messaging\ReminderScheduler;
 use App\Services\OrganizationVerification;
+use App\Services\VideoPayments;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schedule;
@@ -29,6 +30,10 @@ use Illuminate\Support\Facades\Schedule;
 Schedule::call(fn () => SystemHeartbeat::beat('scheduler'))
     ->name('heartbeat')
     ->everyMinute();
+
+Schedule::call(fn () => app(VideoPayments::class)->releaseUnpaid())
+    ->name('release-unpaid-video-calls')
+    ->everyFiveMinutes();
 
 Schedule::call(function (): void {
     OtpCode::query()->where('expires_at', '<', now()->subDay())->delete();

@@ -1,22 +1,36 @@
 <x-layouts.app title="Medicines">
-    <x-page-header title="Favourite medicines" subtitle="Favourites show first when you write a prescription.">
-        <form method="GET"><input class="input" type="search" name="q" value="{{ $search }}" placeholder="Search the catalogue" aria-label="Search catalogue"></form>
+    <x-page-header title="Medicine catalogue" subtitle="Search every department. Favourites show first when you write a prescription.">
+        <form method="GET" class="flex flex-wrap gap-2">
+            <input class="input w-auto" type="search" name="q" value="{{ $search }}" placeholder="Name, for example amlo 5" aria-label="Search catalogue">
+            <select class="input w-auto" name="system" data-auto-submit aria-label="Medical system">
+                <option value="">All systems</option>
+                @foreach (\App\Support\Specialties::systems() as $option)<option value="{{ $option }}" @selected($system === $option)>{{ $option }}</option>@endforeach
+            </select>
+            <select class="input w-auto" name="specialty" data-auto-submit aria-label="Department">
+                <option value="">All departments</option>
+                @foreach (\App\Support\Specialties::bySystem() as $group => $options)
+                    <optgroup label="{{ $group }}">@foreach ($options as $option)<option value="{{ $option }}" @selected($specialty === $option)>{{ $option }}</option>@endforeach</optgroup>
+                @endforeach
+            </select>
+        </form>
     </x-page-header>
-    @if ($search !== '')
+    @if ($results !== null)
         <section class="card mb-4">
             <div class="card-header"><h3 class="card-title">Catalogue results</h3></div>
             @forelse ($results as $medicine)
                 <form method="POST" action="{{ route('app.medicines.favourite') }}" class="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-2 text-sm last:border-b-0 sm:px-5">
                     @csrf
                     <input type="hidden" name="medicine_id" value="{{ $medicine->id }}">
-                    <span>{{ $medicine->displayName() }} · {{ $medicine->generic_name }} · {{ $medicine->form }}</span>
+                    <span class="min-w-0">{{ $medicine->displayName() }} · {{ $medicine->form }}@if ($medicine->specialty)<span class="block text-xs text-slate-500">{{ $medicine->system === $medicine->specialty ? $medicine->system : $medicine->system.' · '.$medicine->specialty }}</span>@endif</span>
                     <button class="btn btn-sm btn-secondary">Add</button>
                 </form>
             @empty
-                <x-empty title="Not in the catalogue" text="You can request it below." />
+                <x-empty title="Not in the catalogue" text="You can request it below, and you can still type any medicine into a prescription." />
             @endforelse
+            @if ($results->hasPages())<div class="p-4">{{ $results->links() }}</div>@endif
         </section>
     @endif
+    <h2 class="mb-2 font-semibold text-slate-900">Your favourites</h2>
     <section class="card">
         @forelse ($favourites as $favourite)
             <div class="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-2 text-sm last:border-b-0 sm:px-5">

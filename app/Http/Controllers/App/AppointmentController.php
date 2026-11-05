@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\App;
 
+use App\Enums\AppointmentMode;
 use App\Enums\AppointmentStatus;
 use App\Enums\VisitType;
 use App\Exceptions\SlotUnavailableException;
@@ -9,8 +10,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Patient;
 use App\Services\AppointmentService;
+use App\Services\AuditLogger;
 use App\Services\DoctorCalendar;
+use App\Services\Messaging\AppointmentMessages;
 use App\Services\TenantDoctors;
+use App\Services\VideoConsultation;
 use App\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -26,6 +30,9 @@ class AppointmentController extends Controller
         private readonly DoctorCalendar $calendar,
         private readonly TenantDoctors $doctors,
         private readonly TenantContext $tenant,
+        private readonly VideoConsultation $video,
+        private readonly AuditLogger $audit,
+        private readonly AppointmentMessages $messages,
     ) {}
 
     public function index(Request $request): View
@@ -63,6 +70,7 @@ class AppointmentController extends Controller
             'doctors' => $doctors,
             'doctorId' => $doctorId,
             'date' => $date,
+            'offersVideo' => $doctorId && $this->video->offeredBy($doctorId),
             'slots' => $doctorId && $doctors->contains('id', $doctorId) ? $this->calendar->slots($doctorId, (int) $this->tenant->id(), $locationId, $date) : [],
         ]);
     }
@@ -80,11 +88,25 @@ class AppointmentController extends Controller
         }
 
         $startsAt = $this->slot($request);
+        $mode = AppointmentMode::from($request->validate(['mode' => ['nullable', Rule::enum(AppointmentMode::class)]])['mode'] ?? AppointmentMode::InPerson->value);
+
+        if ($mode === AppointmentMode::Online && ! $this->video->offeredBy($data['doctor_user_id'])) {
+            throw ValidationException::withMessages(['mode' => 'This doctor has not turned on video calls.']);
+        }
+
+        // The telemedicine guidelines want explicit consent when the clinic starts the consultation.
+        if ($mode === AppointmentMode::Online && ! $request->boolean('video_consent')) {
+            throw ValidationException::withMessages(['video_consent' => 'Please confirm the patient has agreed to a video call.']);
+        }
 
         try {
-            $appointment = $this->appointments->bookSlot($patient, $data['doctor_user_id'], $location, $startsAt, VisitType::from($data['visit_type']));
+            $appointment = $this->appointments->bookSlot($patient, $data['doctor_user_id'], $location, $startsAt, VisitType::from($data['visit_type']), mode: $mode);
         } catch (SlotUnavailableException $exception) {
             throw ValidationException::withMessages(['starts_at' => $exception->getMessage()]);
+        }
+
+        if ($mode === AppointmentMode::Online) {
+            $this->audit->record('appointments.video_consent_recorded', $appointment);
         }
 
         return redirect()->route('app.appointments.index', ['date' => $startsAt->toDateString()])
@@ -113,6 +135,8 @@ class AppointmentController extends Controller
             throw ValidationException::withMessages(['starts_at' => $exception->getMessage()]);
         }
 
+        $this->messages->send($appointment, 'appointment_moved', (string) $appointment->slot_key);
+
         return redirect()->route('app.appointments.index', ['date' => $appointment->scheduled_on->toDateString()])->with('success', 'Rescheduled.');
     }
 
@@ -121,6 +145,7 @@ class AppointmentController extends Controller
         $data = $request->validate(['reason' => ['required', 'string', 'max:255']]);
 
         $this->appointments->cancel($appointment, $data['reason']);
+        $this->messages->send($appointment, 'appointment_cancelled');
 
         return back()->with('success', 'Appointment cancelled.');
     }

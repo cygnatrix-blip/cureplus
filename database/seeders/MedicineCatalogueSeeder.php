@@ -3,29 +3,67 @@
 namespace Database\Seeders;
 
 use App\Models\Medicine;
+use App\Support\Specialties;
 use Illuminate\Database\Seeder;
 
 /**
- * A small starter list, safe for production. The full catalogue is imported from
- * CSV in the Super Admin portal; these are generic names only.
+ * Generic medicines for every department. Safe for production and repeatable: it adds what is
+ * missing and files what is already there, without touching brands or anything an admin added.
  */
 class MedicineCatalogueSeeder extends Seeder
 {
     public function run(): void
     {
-        $rows = [
-            ['Paracetamol', '500 mg', 'Tablet'], ['Paracetamol', '650 mg', 'Tablet'], ['Ibuprofen', '400 mg', 'Tablet'],
-            ['Amoxicillin', '500 mg', 'Capsule'], ['Azithromycin', '500 mg', 'Tablet'], ['Cefixime', '200 mg', 'Tablet'],
-            ['Metformin', '500 mg', 'Tablet'], ['Glimepiride', '1 mg', 'Tablet'], ['Amlodipine', '5 mg', 'Tablet'],
-            ['Telmisartan', '40 mg', 'Tablet'], ['Atorvastatin', '10 mg', 'Tablet'], ['Pantoprazole', '40 mg', 'Tablet'],
-            ['Omeprazole', '20 mg', 'Capsule'], ['Domperidone', '10 mg', 'Tablet'], ['Ondansetron', '4 mg', 'Tablet'],
-            ['Cetirizine', '10 mg', 'Tablet'], ['Levocetirizine', '5 mg', 'Tablet'], ['Montelukast', '10 mg', 'Tablet'],
-            ['Salbutamol', '100 mcg', 'Inhaler'], ['Levothyroxine', '50 mcg', 'Tablet'], ['ORS', null, 'Sachet'],
-            ['Vitamin D3', '60000 IU', 'Capsule'], ['Calcium Carbonate', '500 mg', 'Tablet'], ['Ferrous Ascorbate', '100 mg', 'Tablet'],
-        ];
+        $existing = Medicine::query()->whereNull('brand_name')->get(['id', 'generic_name', 'strength', 'form'])
+            ->keyBy(fn (Medicine $medicine) => $this->key($medicine->generic_name, $medicine->strength, $medicine->form));
+        $new = [];
 
-        foreach ($rows as [$generic, $strength, $form]) {
-            Medicine::query()->firstOrCreate(['generic_name' => $generic, 'brand_name' => null, 'strength' => $strength], ['form' => $form]);
+        foreach (self::rows() as $row) {
+            $key = $this->key($row['generic_name'], $row['strength'], $row['form']);
+
+            if (isset($existing[$key])) {
+                Medicine::query()->whereKey($existing[$key]->id)->update(['system' => $row['system'], 'specialty' => $row['specialty']]);
+
+                continue;
+            }
+
+            $new[] = $row + ['is_active' => true, 'created_at' => now(), 'updated_at' => now()];
         }
+
+        foreach (array_chunk($new, 200) as $chunk) {
+            Medicine::query()->insert($chunk);
+        }
+    }
+
+    /**
+     * @return list<array{generic_name: string, strength: string|null, form: string, specialty: string, system: string}>
+     */
+    public static function rows(): array
+    {
+        $groups = array_merge(require __DIR__.'/data/medicines_allopathy.php', require __DIR__.'/data/medicines_traditional.php');
+        $rows = [];
+
+        foreach ($groups as $specialty => $lines) {
+            foreach ($lines as $line) {
+                [$name, $strengths, $form] = explode('|', $line);
+
+                foreach ($strengths === '' ? [null] : explode(',', $strengths) as $strength) {
+                    $rows[self::key($name, $strength, $form)] ??= [
+                        'generic_name' => $name,
+                        'strength' => $strength,
+                        'form' => $form,
+                        'specialty' => $specialty,
+                        'system' => (string) Specialties::systemOf($specialty),
+                    ];
+                }
+            }
+        }
+
+        return array_values($rows);
+    }
+
+    private static function key(string $name, ?string $strength, ?string $form): string
+    {
+        return mb_strtolower("{$name}|{$strength}|{$form}");
     }
 }

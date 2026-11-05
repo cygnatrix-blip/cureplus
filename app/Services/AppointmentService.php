@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AppointmentMode;
 use App\Enums\AppointmentStatus;
 use App\Enums\VisitType;
 use App\Exceptions\SlotUnavailableException;
@@ -19,6 +20,8 @@ class AppointmentService
         private readonly DoctorCalendar $calendar,
         private readonly SequenceService $sequence,
         private readonly AppointmentMessages $messages,
+        private readonly VideoConsultation $video,
+        private readonly VideoPayments $videoPayments,
     ) {}
 
     /**
@@ -26,10 +29,10 @@ class AppointmentService
      * for one doctor run one at a time, across every organization, so the overlap check
      * sees the truth. The unique index on (doctor, slot_key) is the backstop.
      */
-    public function bookSlot(Patient $patient, int $doctorId, int $locationId, CarbonImmutable $startsAt, VisitType $visitType, string $source = 'staff'): Appointment
+    public function bookSlot(Patient $patient, int $doctorId, int $locationId, CarbonImmutable $startsAt, VisitType $visitType, string $source = 'staff', AppointmentMode $mode = AppointmentMode::InPerson): Appointment
     {
         try {
-            $appointment = DB::transaction(function () use ($patient, $doctorId, $locationId, $startsAt, $visitType, $source): Appointment {
+            $appointment = DB::transaction(function () use ($patient, $doctorId, $locationId, $startsAt, $visitType, $source, $mode): Appointment {
                 User::query()->whereKey($doctorId)->lockForUpdate()->firstOrFail();
 
                 $organizationId = (int) $patient->organization_id;
@@ -45,6 +48,9 @@ class AppointmentService
                     'patient_id' => $patient->id,
                     'doctor_user_id' => $doctorId,
                     'kind' => 'booked',
+                    'mode' => $mode,
+                    'video_link' => $mode === AppointmentMode::Online ? $this->video->linkFor($doctorId) : null,
+                    'pay_by' => $mode === AppointmentMode::Online && $source === 'link' ? $this->videoPayments->deadlineFor($organizationId, $doctorId, $visitType, (int) $patient->id, $startsAt) : null,
                     'source' => $source,
                     'visit_type' => $visitType,
                     'scheduled_on' => $startsAt->toDateString(),

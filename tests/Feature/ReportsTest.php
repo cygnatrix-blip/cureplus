@@ -76,6 +76,7 @@ class ReportsTest extends TestCase
     public function test_the_monthly_excel_file_is_a_real_workbook_with_numbers(): void
     {
         [$organization, $owner, $location, $doctor, $patient] = $this->clinic();
+        $patient->forceFill(['name' => 'Ravi Kumar'])->save();
         $this->paidBill($organization, $location, $patient, $doctor, 50000, 'cash');
 
         $response = $this->actingAs($owner, 'web')->get(route('app.reports.monthly.xlsx', ['month' => now()->format('Y-m')]))->assertOk();

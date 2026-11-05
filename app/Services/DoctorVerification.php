@@ -35,12 +35,12 @@ class DoctorVerification
 
         return DoctorProfile::query()
             ->where('verification_status', 'unverified')
-            ->whereNotNull('registration_number')
-            ->whereNotNull('registration_council')
             ->whereIn('user_id', $memberships->keys())
             ->with('user:id,name,email,mobile')
             ->oldest('updated_at')
             ->get()
+            ->filter(fn (DoctorProfile $profile) => $profile->hasCredentials())
+            ->values()
             ->map(fn (DoctorProfile $profile) => [
                 'profile' => $profile,
                 'clinics' => $memberships->get($profile->user_id)->map(fn (Membership $membership) => $membership->organization?->name)->filter()->join(', '),
@@ -50,7 +50,7 @@ class DoctorVerification
 
     public function registrationSaved(DoctorProfile $profile, bool $changed): void
     {
-        if (blank($profile->registration_number) || blank($profile->registration_council)) {
+        if (! $profile->hasCredentials()) {
             return;
         }
 

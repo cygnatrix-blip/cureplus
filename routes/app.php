@@ -69,6 +69,7 @@ Route::prefix('app')->name('app.')->middleware(['auth:web', 'account.active', 'n
             Route::post('/push/unsubscribe', [PushController::class, 'unsubscribe'])->middleware('throttle:30,1')->name('push.unsubscribe');
             Route::post('/account/notifications', [PushController::class, 'savePreferences'])->name('notifications.save');
             Route::post('/account/doctor-profile', [DoctorProfileController::class, 'update'])->name('doctor-profile.update');
+            Route::post('/account/doctor-profile/certificate', [DoctorProfileController::class, 'certificate'])->name('doctor-profile.certificate');
             Route::post('/account/doctor-photo', [DoctorProfileController::class, 'photo'])->name('doctor-profile.photo');
             Route::middleware('not-impersonating')->group(function () {
                 Route::put('/account/password', [AccountController::class, 'updatePassword'])->middleware('throttle:login')->name('account.password');

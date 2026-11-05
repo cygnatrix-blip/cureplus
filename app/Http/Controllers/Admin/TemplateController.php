@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Template;
+use App\Support\Specialties;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -23,7 +24,7 @@ class TemplateController extends Controller
     public function storeEmr(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'specialty' => ['required', 'string', 'max:100'],
+            'specialty' => ['required', Rule::in(Specialties::allowed())],
             'name' => ['required', 'string', 'max:120'],
             'complaints' => ['nullable', 'string', 'max:2000'],
             'history' => ['nullable', 'string', 'max:2000'],

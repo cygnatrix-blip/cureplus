@@ -26,13 +26,14 @@
                             <td class="whitespace-nowrap">{{ $appointment->starts_at?->format('H:i') ?? 'Walk-in' }}</td>
                             <td><a class="text-brand-700 underline" href="{{ route('app.patients.show', $appointment->patient_id) }}">{{ $appointment->patient?->name }}</a></td>
                             <td>{{ $appointment->doctor?->name }}</td>
-                            <td>{{ $appointment->visit_type->label() }}</td>
+                            <td>{{ $appointment->visit_type->label() }}@if ($appointment->isOnline())<span class="badge badge-slate ml-1">Video</span>@endif @if ($appointment->isAwaitingPayment())<span class="badge badge-amber ml-1">Awaiting payment</span>@endif</td>
                             <td><span class="badge badge-slate">{{ $appointment->status->label() }}</span></td>
                             <td class="text-right">
                                 @can('update', $appointment)
                                     @if (in_array($appointment->status, [\App\Enums\AppointmentStatus::Booked, \App\Enums\AppointmentStatus::CheckedIn], true))
                                         <div class="flex flex-wrap justify-end gap-1">
-                                            <x-send-to-patient :patient="$appointment->patient" event="appointment_reminder" :variables="['name' => $appointment->patient?->name, 'doctor' => $appointment->doctor?->name, 'clinic' => $tenant->organization()?->name, 'time' => $appointment->starts_at?->format('d M, h:i A') ?? $appointment->scheduled_on->format('d M')]" />
+                                            <x-send-to-patient :patient="$appointment->patient" :event="$appointment->canJoinVideo() ? 'video_consult' : 'appointment_reminder'" :link="$appointment->canJoinVideo() ? $appointment->video_link : null" :variables="array_filter(['name' => $appointment->patient?->name, 'doctor' => $appointment->doctor?->name, 'clinic' => $tenant->organization()?->name, 'time' => $appointment->starts_at?->format('d M, h:i A') ?? $appointment->scheduled_on->format('d M'), 'link' => $appointment->canJoinVideo() ? $appointment->video_link : null])" />
+                                            @include('app.appointments.partials.join-video')
                                             <a class="btn btn-sm btn-secondary" href="{{ route('app.appointments.edit', $appointment) }}">Reschedule</a>
                                             <form method="POST" action="{{ route('app.appointments.cancel', $appointment) }}" class="flex gap-1" data-confirm="Cancel this appointment?">
                                                 @csrf

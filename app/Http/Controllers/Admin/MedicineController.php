@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Medicine;
 use App\Models\MedicineRequest;
 use App\Services\AuditLogger;
+use App\Support\Specialties;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class MedicineController extends Controller
@@ -26,21 +28,22 @@ class MedicineController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, AuditLogger $audit): RedirectResponse
     {
-        Medicine::create($this->validated($request));
+        $audit->record('medicines.created', Medicine::create($this->withSystem($this->validated($request))));
 
         return back()->with('success', 'Medicine added.');
     }
 
-    public function update(Request $request, Medicine $medicine): RedirectResponse
+    public function update(Request $request, Medicine $medicine, AuditLogger $audit): RedirectResponse
     {
-        $medicine->update($this->validated($request));
+        $medicine->update($this->withSystem($this->validated($request)));
+        $audit->record('medicines.updated', $medicine);
 
         return back()->with('success', 'Medicine updated.');
     }
 
-    public function import(Request $request): RedirectResponse
+    public function import(Request $request, AuditLogger $audit): RedirectResponse
     {
         $request->validate(['file' => ['required', 'file', 'mimes:csv,txt', 'max:20480']]);
         $handle = fopen($request->file('file')->getRealPath(), 'r');
@@ -56,12 +59,13 @@ class MedicineController extends Controller
 
             Medicine::query()->firstOrCreate(
                 ['generic_name' => $data['generic_name'], 'brand_name' => $data['brand_name'] ?? null, 'strength' => $data['strength'] ?? null],
-                ['form' => $data['form'] ?? null, 'manufacturer' => $data['manufacturer'] ?? null],
+                $this->withSystem(['form' => $data['form'] ?? null, 'manufacturer' => $data['manufacturer'] ?? null, 'specialty' => in_array($data['specialty'] ?? null, Specialties::all(), true) ? $data['specialty'] : null]),
             );
             $added++;
         }
 
         fclose($handle);
+        $audit->record('medicines.imported', metadata: ['rows' => $added]);
 
         return back()->with('success', "Imported {$added} rows.");
     }
@@ -100,6 +104,15 @@ class MedicineController extends Controller
     }
 
     /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function withSystem(array $data): array
+    {
+        return $data + ['system' => Specialties::systemOf($data['specialty'] ?? null)];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function validated(Request $request): array
@@ -110,6 +123,7 @@ class MedicineController extends Controller
             'strength' => ['nullable', 'string', 'max:60'],
             'form' => ['nullable', 'string', 'max:40'],
             'manufacturer' => ['nullable', 'string', 'max:255'],
+            'specialty' => ['nullable', Rule::in(Specialties::all())],
             'is_active' => ['sometimes', 'boolean'],
         ]);
     }

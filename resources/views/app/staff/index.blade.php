@@ -32,7 +32,7 @@
                                         <span class="badge badge-green">Bookable</span>
                                     @elseif ($doctorProfile?->verification_status === 'rejected')
                                         <span class="badge badge-red">Not verified</span>
-                                    @elseif (blank($doctorProfile?->registration_number) || blank($doctorProfile?->registration_council))
+                                    @elseif (! $doctorProfile?->hasCredentials())
                                         <span class="badge badge-amber">Needs registration number</span>
                                     @else
                                         <span class="badge badge-amber">Awaiting check</span>

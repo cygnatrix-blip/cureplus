@@ -13,10 +13,11 @@
             @if ($isDoctor)
                 <form method="POST" action="{{ route('app.verification.registration') }}" class="card card-body space-y-3">
                     @csrf
-                    <h2 class="font-semibold text-slate-900">Your medical registration</h2>
+                    <h2 class="font-semibold text-slate-900">Your professional registration</h2>
+                    @if ($profile?->isAllied())<p class="text-sm text-slate-600">No registration number yet? Upload your degree or membership certificate under documents instead.</p>@endif
                     <div class="grid gap-3 sm:grid-cols-2">
-                        <x-field name="registration_number" label="Registration number" :value="$profile?->registration_number" required />
-                        <x-field name="registration_council" label="State medical council" :value="$profile?->registration_council" list="councils" required />
+                        <x-field name="registration_number" label="Registration number" :value="$profile?->registration_number" :required="! $profile?->isAllied()" />
+                        <x-field name="registration_council" label="Registration council" :value="$profile?->registration_council" list="councils" :required="! $profile?->isAllied()" />
                     </div>
                     <datalist id="councils">@foreach ($councils as $council)<option value="{{ $council }}"></option>@endforeach</datalist>
                     <button class="btn btn-primary">Save</button>

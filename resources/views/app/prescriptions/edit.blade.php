@@ -3,13 +3,19 @@
         <a class="btn btn-secondary" href="{{ route('app.prescriptions.edit', ['visit' => $visit, 'copy_last' => 1]) }}">Copy last prescription</a>
         <a class="btn btn-ghost" href="{{ route('app.visits.show', $visit) }}">Back</a>
     </x-page-header>
+    @if ($isAllied)
+        <p class="mb-4 rounded-lg bg-brand-50 p-3 text-sm text-brand-900" role="note">Add exercises, therapy, diet advice and products from your own field. Medicines outside your profession cannot go on your plan, so please refer the patient to a doctor for those.</p>
+    @endif
+    @if ($visit->appointment?->isOnline())
+        <p class="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900" role="note"><strong>This is a video consultation.</strong> Under the Telemedicine Practice Guidelines, Schedule X and narcotic or psychotropic (NDPS) medicines cannot be prescribed this way, and other medicines have their own rules for first and follow-up consultations.</p>
+    @endif
     <form method="POST" action="{{ route('app.prescriptions.update', $visit) }}" class="space-y-4" x-data="rxEditor"
         data-items="{{ json_encode($items) }}" data-search-url="{{ route('app.medicines.search') }}" @submit="serialize">
         @csrf @method('PUT')
         <input type="hidden" name="items_json" x-ref="itemsJson">
         <section class="card card-body">
-            <label class="label" for="medicine-search">Add medicine</label>
-            <input class="input" id="medicine-search" type="search" placeholder="Type a brand or generic name" autocomplete="off" x-ref="search" @input="search" @keydown.enter.prevent="addTyped" autofocus>
+            <label class="label" for="medicine-search">{{ $isAllied ? 'Add to the plan' : 'Add medicine' }}</label>
+            <input class="input" id="medicine-search" type="search" placeholder="{{ $isAllied ? 'Type an exercise, diet advice or product' : 'Type a brand or generic name' }}" autocomplete="off" x-ref="search" @input="search" @keydown.enter.prevent="addTyped" autofocus>
             <ul class="mt-1 divide-y divide-slate-100" x-show="hasResults" x-cloak>
                 <template x-for="result in results" :key="result.id">
                     <li><button type="button" class="block w-full px-2 py-3 text-left text-sm hover:bg-slate-50" :data-id="result.id" @click="pick"><span x-text="result.label"></span></button></li>

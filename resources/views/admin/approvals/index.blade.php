@@ -30,7 +30,9 @@
                 <div class="min-w-0">
                     <p class="font-medium text-slate-900">{{ $row['profile']->user?->name }}</p>
                     <p class="text-slate-500">{{ $row['clinics'] }}</p>
-                    <p class="mt-1">{{ $row['profile']->registration_number }} · {{ $row['profile']->registration_council }}</p>
+                    @if (filled($row['profile']->registration_number))<p class="mt-1">{{ $row['profile']->registration_number }} · {{ $row['profile']->registration_council }}</p>@endif
+                    @if ($row['profile']->specialty)<p class="text-slate-500">{{ $row['profile']->specialty }}</p>@endif
+                    @if ($certificate = $row['profile']->certificate())<a class="text-brand-700 underline" target="_blank" rel="noopener" href="{{ route('admin.approvals.document', [$certificate->organization_id, $certificate->id]) }}">View degree or membership certificate</a>@endif
                     @if ($row['profile']->qualification)<p class="text-slate-500">{{ $row['profile']->qualification }}</p>@endif
                 </div>
                 <div class="flex flex-wrap items-center gap-2">

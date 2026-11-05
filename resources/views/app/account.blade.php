@@ -18,16 +18,36 @@
                 @if ($doctorProfile?->verification_status === 'rejected')
                     <p class="rounded-lg bg-rose-50 p-3 text-sm text-rose-900" role="alert"><strong>We could not confirm your registration:</strong> {{ $doctorProfile->verification_note }} Correct your details and save to send them again.</p>
                 @elseif ($doctorProfile?->verification_status !== 'verified' && config('cureplus.organizations.doctors_need_approval'))
-                    <p class="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{{ filled($doctorProfile?->registration_number) && filled($doctorProfile?->registration_council) ? 'Our team is checking your registration, usually within 24 hours. Patients can book you after that.' : 'Add your registration number and medical council. Patients can book you once our team has checked them.' }}</p>
+                    <p class="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{{ $doctorProfile?->hasCredentials() ? 'Our team is checking your registration, usually within 24 hours. Patients can book you after that.' : 'Add your registration number and medical council. Patients can book you once our team has checked them.' }}</p>
                 @endif
                 <div class="grid gap-3 sm:grid-cols-2">
                     <x-field name="qualification" label="Qualification" :value="$doctorProfile?->qualification" />
-                    <x-field name="specialty" label="Specialty" :value="$doctorProfile?->specialty" />
+                    <x-specialty-select :value="$doctorProfile?->specialty" />
                     <x-field name="registration_number" label="Registration number" :value="$doctorProfile?->registration_number" />
-                    <x-field name="registration_council" label="Medical council" :value="$doctorProfile?->registration_council" />
+                    <x-field name="registration_council" label="Registration council" :value="$doctorProfile?->registration_council" />
                 </div>
+                <fieldset class="space-y-3 border-t border-slate-100 pt-3">
+                    <legend class="text-sm font-semibold text-slate-900">Video calls</legend>
+                    <label class="flex items-start gap-2 text-sm text-slate-700">
+                        <input type="checkbox" name="offers_video" value="1" class="mt-1" @checked(old('offers_video', $doctorProfile?->offers_video))>
+                        <span>Let patients book a video call with me, using the same hours and fee as clinic visits</span>
+                    </label>
+                    <x-field name="video_link" label="Your Google Meet link (recommended)" type="url" placeholder="https://meet.google.com/abc-defg-hij" :value="$doctorProfile?->video_link" hint="Open meet.google.com, choose New meeting, then Create a meeting for later, and paste the link here. Patients ask to join and you let them in one at a time. If you leave this empty, each patient gets a private Jitsi room instead, and you must join first and sign in with Google." />
+                </fieldset>
                 <button class="btn btn-secondary">Save doctor details</button>
             </form>
+            @if ($doctorProfile?->isAllied())
+                <form method="POST" action="{{ route('app.doctor-profile.certificate') }}" enctype="multipart/form-data" class="card card-body space-y-2">
+                    @csrf
+                    <h2 class="font-semibold text-slate-900">Degree or membership certificate</h2>
+                    <p class="text-sm text-slate-600">No registration number yet? Our team can check this instead.</p>
+                    @if ($doctorProfile->certificate())<p class="text-sm font-medium text-emerald-800">We have your certificate. Upload again only if it has changed.</p>@endif
+                    <input class="input" type="file" name="certificate" accept=".pdf,.jpg,.jpeg,.png" required aria-label="Degree or membership certificate">
+                    <p class="hint">PDF, JPG or PNG, up to 5 MB.</p>
+                    @error('certificate')<p class="field-error">{{ $message }}</p>@enderror
+                    <button class="btn btn-secondary">Send certificate</button>
+                </form>
+            @endif
             <form method="POST" action="{{ route('app.doctor-profile.photo') }}" enctype="multipart/form-data" class="card card-body space-y-2" x-data="photoInput">
                 @csrf
                 <h2 class="font-semibold text-slate-900">Your photo</h2>

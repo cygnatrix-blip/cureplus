@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FavouriteMedicine;
 use App\Models\Medicine;
 use App\Models\MedicineRequest;
+use App\Support\Specialties;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -16,10 +17,23 @@ class MedicineController extends Controller
     public function index(Request $request): View
     {
         $search = trim((string) $request->query('q'));
+        $specialty = in_array($request->query('specialty'), Specialties::all(), true) ? (string) $request->query('specialty') : '';
+        $system = in_array($request->query('system'), Specialties::systems(), true) ? (string) $request->query('system') : '';
+        $hasFilter = mb_strlen($search) >= 2 || $specialty !== '' || $system !== '';
 
         return view('app.medicines.index', [
             'favourites' => FavouriteMedicine::query()->with('medicine')->latest('id')->limit(200)->get(),
-            'results' => mb_strlen($search) >= 2 ? Medicine::query()->where('is_active', true)->search($search)->limit(25)->get() : collect(),
+            'results' => $hasFilter
+                ? Medicine::query()->where('is_active', true)
+                    ->when(mb_strlen($search) >= 2, fn ($query) => $query->search($search))
+                    ->when($specialty !== '', fn ($query) => $query->where('specialty', $specialty))
+                    ->when($system !== '', fn ($query) => $query->where('system', $system))
+                    ->rankedFor($request->user()->doctorProfile?->specialty, $search)
+                    ->paginate(50)
+                    ->withQueryString()
+                : null,
+            'specialty' => $specialty,
+            'system' => $system,
             'requests' => MedicineRequest::query()->latest('id')->limit(20)->get(),
             'search' => $search,
         ]);

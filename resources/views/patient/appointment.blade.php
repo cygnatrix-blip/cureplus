@@ -3,8 +3,8 @@
         @if (session('booked'))
             <section class="rounded-2xl bg-emerald-50 p-5 text-center" role="status">
                 <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white"><x-icon name="check" class="h-8 w-8" /></span>
-                <h1 class="mt-3 text-xl font-bold text-emerald-900">{{ __('Your appointment is booked.') }}</h1>
-                @if ($appointment->patient?->email && app(\App\Services\OrganizationMail::class)->hasOwnEmail((int) $appointment->organization_id))<p class="text-sm text-emerald-800">{{ __('The details are on their way to your email.') }}</p>@endif
+                <h1 class="mt-3 text-xl font-bold text-emerald-900">{{ $appointment->isAwaitingPayment() ? __('Your time is held. Please pay to confirm it.') : __('Your appointment is booked.') }}</h1>
+                @if (! $appointment->isAwaitingPayment() && $appointment->patient?->email && app(\App\Services\OrganizationMail::class)->hasOwnEmail((int) $appointment->organization_id))<p class="text-sm text-emerald-800">{{ __('The details are on their way to your email.') }}</p>@endif
             </section>
         @endif
         <article class="card overflow-hidden">
@@ -22,11 +22,28 @@
             <dl class="grid gap-4 p-5 text-sm sm:grid-cols-2">
                 <div><dt class="text-slate-500">{{ __('Doctor') }}</dt><dd class="font-semibold text-slate-900">{{ $appointment->doctor?->name }}</dd></div>
                 <div><dt class="text-slate-500">{{ __('Patient') }}</dt><dd class="font-semibold text-slate-900">{{ $appointment->patient?->name }}</dd></div>
-                <div><dt class="text-slate-500">{{ __('Location') }}</dt><dd class="font-semibold text-slate-900">{{ $appointment->location?->name }}</dd><dd class="text-slate-500">{{ collect([$appointment->location?->address_line, $appointment->location?->city])->filter()->join(', ') }}</dd></div>
+                @if ($appointment->isOnline())
+                    <div><dt class="text-slate-500">{{ __('Where') }}</dt><dd class="font-semibold text-slate-900">{{ __('Video call') }}</dd></div>
+                @else
+                    <div><dt class="text-slate-500">{{ __('Location') }}</dt><dd class="font-semibold text-slate-900">{{ $appointment->location?->name }}</dd><dd class="text-slate-500">{{ collect([$appointment->location?->address_line, $appointment->location?->city])->filter()->join(', ') }}</dd></div>
+                @endif
                 <div><dt class="text-slate-500">{{ __('Status') }}</dt><dd><span class="badge badge-slate">{{ __($appointment->status->label()) }}</span></dd></div>
             </dl>
         </article>
-        @if ($canPay)
+        @if ($appointment->isAwaitingPayment())
+            <section class="card space-y-3 border-amber-300 bg-amber-50 p-5" role="status">
+                <h2 class="font-semibold text-amber-950">{{ __('Pay to confirm your video call') }}</h2>
+                <p class="text-sm text-amber-900">{{ __('We are holding this time for you until :time. You will get the link to join as soon as your payment reaches us.', ['time' => $appointment->pay_by->format('h:i A')]) }}</p>
+                @if ($canPay)<form method="POST" action="{{ route('patient.appointments.pay', $appointment->id) }}">@csrf<button class="btn btn-primary w-full"><x-icon name="card" />{{ __('Pay now') }}</button></form>@endif
+            </section>
+        @endif
+        @if ($appointment->canJoinVideo())
+            <section class="card space-y-2 p-5">
+                <a class="btn btn-primary w-full" href="{{ $appointment->video_link }}" target="_blank" rel="noopener noreferrer"><x-icon name="video" />{{ __('Join video call') }}</a>
+                <p class="text-sm text-slate-600">{{ __('Join at your appointment time, and allow your camera and microphone. If it says you are waiting, stay on the page until the doctor joins. Your phone may offer to open an app, which is free.') }}</p>
+            </section>
+        @endif
+        @if ($canPay && ! $appointment->isAwaitingPayment())
             <form method="POST" action="{{ route('patient.appointments.pay', $appointment->id) }}">@csrf<button class="btn btn-primary w-full"><x-icon name="card" />{{ __('Pay online') }}</button></form>
         @endif
         @if ($canChange)

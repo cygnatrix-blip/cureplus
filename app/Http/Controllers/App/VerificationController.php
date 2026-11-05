@@ -42,12 +42,14 @@ class VerificationController extends Controller
     {
         abort_unless($this->tenant->membership()?->hasRole('doctor'), 403);
 
+        $profile = DoctorProfile::query()->firstOrNew(['user_id' => $request->user()->id]);
+        $isOptional = $profile->isAllied() && $profile->certificate() !== null;
+
         $data = $request->validate([
-            'registration_number' => ['required', 'string', 'max:60'],
-            'registration_council' => ['required', 'string', 'max:120'],
+            'registration_number' => [Rule::requiredIf(! $isOptional), 'nullable', 'string', 'max:60'],
+            'registration_council' => [Rule::requiredIf(! $isOptional), 'nullable', 'string', 'max:120'],
         ]);
 
-        $profile = DoctorProfile::query()->firstOrNew(['user_id' => $request->user()->id]);
         $changed = $profile->registration_number !== $data['registration_number'] || $profile->registration_council !== $data['registration_council'];
         $profile->fill($data);
 

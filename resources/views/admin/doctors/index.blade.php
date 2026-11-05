@@ -13,7 +13,7 @@
                         @php($profile = $profiles->get($row->user_id))
                         <tr>
                             <td class="font-medium text-slate-900">{{ $row->user?->name }}</td>
-                            <td>{{ $profile?->qualification }}</td>
+                            <td>{{ $profile?->qualification }}@if ($profile?->specialty)<span class="block text-xs text-slate-500">{{ $profile->specialty }}</span>@endif</td>
                             <td>{{ $profile?->registration_number }} {{ $profile?->registration_council }}</td>
                             <td><span @class(['badge', 'badge-green' => $profile?->verification_status === 'verified', 'badge-red' => $profile?->verification_status === 'rejected', 'badge-slate' => $profile?->verification_status !== 'verified' && $profile?->verification_status !== 'rejected'])>{{ ucfirst($profile?->verification_status ?? 'No profile') }}</span></td>
                             <td class="text-right">

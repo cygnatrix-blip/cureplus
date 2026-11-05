@@ -1,7 +1,7 @@
 <x-layouts.guest title="Register" wide>
     <h1 class="text-lg font-semibold text-slate-900">Register your practice</h1>
     <p class="mb-4 text-sm text-slate-600">We check every practice before patients can book, usually within 24 hours. Giving everything here means we will not need to call you.</p>
-    <form method="POST" action="{{ route('register.store') }}" enctype="multipart/form-data" class="space-y-4" x-data="registerType" data-initial="{{ old('type', 'solo_practice') }}" data-owner-doctor="{{ old('owner_is_doctor') ? '1' : '0' }}">
+    <form method="POST" action="{{ route('register.store') }}" enctype="multipart/form-data" class="space-y-4" x-data="registerType" data-allied='@json(config('specialties.systems.Allied Health'))' data-specialty="{{ old('specialty') }}" data-initial="{{ old('type', 'solo_practice') }}" data-owner-doctor="{{ old('owner_is_doctor') ? '1' : '0' }}">
         @csrf
         <fieldset>
             <legend class="label">Are you a clinic or a doctor?</legend>
@@ -42,12 +42,18 @@
             <span>I also see patients at this clinic</span>
         </label>
         <fieldset class="space-y-3 border-t border-slate-100 pt-4" x-show="needsDoctorDetails">
-            <legend class="text-sm font-semibold text-slate-900">Your medical registration</legend>
+            <legend class="text-sm font-semibold text-slate-900">Your professional registration</legend>
             <div class="grid gap-4 sm:grid-cols-2">
-                <x-field name="registration_number" label="Registration number" x-bind:required="needsDoctorDetails" />
-                <x-field name="registration_council" label="State medical council" list="councils" x-bind:required="needsDoctorDetails" />
-                <x-field name="qualification" label="Qualification" placeholder="MBBS, MD" x-bind:required="needsDoctorDetails" />
-                <x-field name="specialty" label="Specialty (optional)" placeholder="General Medicine" />
+                <x-field name="registration_number" label="Registration number" x-bind:required="needsRegistrationNumber" />
+                <x-field name="registration_council" label="Registration council" list="councils" hint="Medical, dental, AYUSH or allied health council." x-bind:required="needsRegistrationNumber" />
+                <x-field name="qualification" label="Qualification" placeholder="MBBS, BDS, BAMS, BHMS…" x-bind:required="needsDoctorDetails" />
+                <x-specialty-select x-bind:required="needsDoctorDetails" x-on:change="pickSpecialty" />
+            </div>
+            <div x-show="showsCertificate" x-cloak>
+                <label class="label" for="certificate">Degree or membership certificate</label>
+                <input class="input" id="certificate" type="file" name="certificate" accept=".pdf,.jpg,.jpeg,.png" x-on:change="pickCertificate">
+                <p class="hint">No registration number yet? Attach this instead. PDF, JPG or PNG, up to 5 MB.</p>
+                @error('certificate')<p class="field-error">{{ $message }}</p>@enderror
             </div>
             <datalist id="councils">@foreach ($councils as $council)<option value="{{ $council }}"></option>@endforeach</datalist>
         </fieldset>

@@ -13,6 +13,7 @@ use App\Services\AuditLogger;
 use App\Services\Messaging\Notifier;
 use App\Services\Payments\GatewayFactory;
 use App\Services\SequenceService;
+use App\Services\VideoPayments;
 use App\Support\Money;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Auth;
@@ -26,6 +27,7 @@ class BillingService
         private readonly AuditLogger $audit,
         private readonly GatewayFactory $gateways,
         private readonly Notifier $notifier,
+        private readonly VideoPayments $videoPayments,
     ) {}
 
     /**
@@ -109,6 +111,7 @@ class BillingService
         });
 
         $this->tellPatient($invoice, $payment);
+        $this->videoPayments->settled($invoice);
 
         return $payment;
     }
@@ -143,6 +146,7 @@ class BillingService
 
         if ($captured !== null) {
             $this->tellPatient($captured[0], $captured[1]);
+            $this->videoPayments->settled($captured[0]->refresh());
         }
 
         return $changed;

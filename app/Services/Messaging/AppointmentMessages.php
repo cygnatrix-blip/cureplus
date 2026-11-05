@@ -25,11 +25,31 @@ class AppointmentMessages
             return;
         }
 
-        $this->notifier->notifyPatient($patient, $event, [
+        // The link is what they are paying for, so it is not sent until they have.
+        if ($appointment->isAwaitingPayment()) {
+            return;
+        }
+
+        $variables = [
             'doctor' => $doctor->name,
             'clinic' => $organization->name,
             'time' => $appointment->starts_at?->format('d M, h:i A') ?? 'today',
             'token' => $appointment->token_number,
-        ], "appointment:{$appointment->id}:{$event}".($dedupeSuffix ? ":{$dedupeSuffix}" : ''));
+        ];
+
+        // A video patient needs the link, and must not be told to come in.
+        if ($appointment->isOnline()) {
+            $event = match ($event) {
+                'token_called' => 'video_consult_now',
+                'appointment_booked', 'appointment_reminder', 'appointment_moved' => 'video_consult',
+                default => $event,
+            };
+        }
+
+        if (in_array($event, ['video_consult', 'video_consult_now'], true)) {
+            $variables['link'] = (string) $appointment->video_link;
+        }
+
+        $this->notifier->notifyPatient($patient, $event, $variables, "appointment:{$appointment->id}:{$event}".($dedupeSuffix ? ":{$dedupeSuffix}" : ''));
     }
 }

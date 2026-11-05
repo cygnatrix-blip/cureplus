@@ -153,7 +153,7 @@ class PlatformAdminBusinessTest extends TestCase
     {
         $this->actingAs($this->superAdmin(), 'platform');
 
-        $this->post(route('admin.templates.emr'), ['specialty' => 'Cardiology', 'name' => 'Chest pain', 'complaints' => 'Pain'])->assertSessionHas('success');
+        $this->post(route('admin.templates.emr'), ['specialty' => 'Cardiologist', 'name' => 'Chest pain', 'complaints' => 'Pain'])->assertSessionHas('success');
 
         $this->assertSame(1, Template::withoutTenancy()->whereNull('organization_id')->where('kind', 'emr')->count());
     }

@@ -8,11 +8,13 @@ use App\Models\DoctorProfile;
 use App\Models\Location;
 use App\Models\Membership;
 use App\Models\Organization;
+use App\Models\OrganizationDocument;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\Billing\SubscriptionService;
 use App\Services\OrganizationVerification;
 use App\Support\Mobile;
+use App\Support\Specialties;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 
@@ -24,7 +26,7 @@ class RegisterOrganization
      * Doctor: solo practice, Owner + Doctor roles, first chamber.
      * Clinic: clinic organization, Owner role (plus Doctor if they see patients), first branch.
      *
-     * @param  array{type: string, organization_name?: string|null, name: string, email: string, mobile: string, password: string, address_line: string, city: string, pincode?: string|null, owner_is_doctor?: bool|string, registration_number?: string|null, registration_council?: string|null, qualification?: string|null, specialty?: string|null, document?: UploadedFile|null}  $data
+     * @param  array{type: string, organization_name?: string|null, name: string, email: string, mobile: string, password: string, address_line: string, city: string, pincode?: string|null, owner_is_doctor?: bool|string, registration_number?: string|null, registration_council?: string|null, qualification?: string|null, specialty?: string|null, document?: UploadedFile|null, certificate?: UploadedFile|null}  $data
      */
     public function __invoke(array $data): User
     {
@@ -88,6 +90,10 @@ class RegisterOrganization
 
             if (! empty($data['document'])) {
                 $this->verification->storeDocument($organization, $data['document'], $isSolo ? 'doctor_registration' : 'clinic_proof', $user->id);
+            }
+
+            if ($isDoctor && Specialties::isAllied($data['specialty'] ?? null) && ! empty($data['certificate'])) {
+                $this->verification->storeDocument($organization, $data['certificate'], OrganizationDocument::PROFESSIONAL_CERTIFICATE, $user->id);
             }
 
             // With approval on, the trial waits for the approval date.

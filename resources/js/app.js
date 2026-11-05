@@ -61,9 +61,26 @@ Alpine.data('toast', () => ({
 Alpine.data('registerType', () => ({
     type: 'solo_practice',
     ownerIsDoctor: false,
+    specialty: '',
+    allied: [],
+    hasCertificate: false,
     init() {
         this.type = this.$el.dataset.initial || 'solo_practice';
         this.ownerIsDoctor = this.$el.dataset.ownerDoctor === '1';
+        this.specialty = this.$el.dataset.specialty || '';
+        this.allied = JSON.parse(this.$el.dataset.allied || '[]');
+    },
+    pickSpecialty(event) {
+        this.specialty = event.target.value;
+    },
+    pickCertificate(event) {
+        this.hasCertificate = event.target.files.length > 0;
+    },
+    get showsCertificate() {
+        return this.needsDoctorDetails && this.allied.includes(this.specialty);
+    },
+    get needsRegistrationNumber() {
+        return this.needsDoctorDetails && ! (this.showsCertificate && this.hasCertificate);
     },
     toggleOwnerDoctor(event) {
         this.ownerIsDoctor = event.target.checked;

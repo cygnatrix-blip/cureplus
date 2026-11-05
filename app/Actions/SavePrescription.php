@@ -2,6 +2,8 @@
 
 namespace App\Actions;
 
+use App\Enums\AppointmentMode;
+use App\Models\Appointment;
 use App\Models\DoctorProfile;
 use App\Models\FollowUp;
 use App\Models\Prescription;
@@ -25,6 +27,8 @@ class SavePrescription
                 'doctor_user_id' => $visit->doctor_user_id,
                 'doctor_name' => $visit->doctor->name,
                 'doctor_qualification' => $profile?->qualification,
+                'doctor_specialty' => $profile?->specialty,
+                'is_teleconsultation' => $visit->appointment_id !== null && Appointment::withoutTenancy()->whereKey($visit->appointment_id)->value('mode') === AppointmentMode::Online,
                 'doctor_registration_number' => $profile?->registration_number,
                 'lab_advice' => $data['lab_advice'] ?? null,
                 'patient_instructions' => $data['patient_instructions'] ?? null,

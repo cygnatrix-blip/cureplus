@@ -27,7 +27,7 @@ class StaffController extends Controller
 
         return view('app.staff.index', [
             'memberships' => Membership::query()
-                ->with(['user:id,name,email,mobile', 'user.doctorProfile:id,user_id,verification_status,registration_number,registration_council', 'roles:id,key,name', 'locations:id,name'])
+                ->with(['user:id,name,email,mobile', 'user.doctorProfile:id,user_id,specialty,verification_status,registration_number,registration_council', 'roles:id,key,name', 'locations:id,name'])
                 ->when(in_array($status, ['active', 'inactive'], true), fn ($q) => $q->where('status', $status))
                 ->when($search !== '', fn ($q) => $q->whereHas('user', fn ($q) => $q
                     ->where('name', 'like', "%{$search}%")

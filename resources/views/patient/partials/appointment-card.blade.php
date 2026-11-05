@@ -16,7 +16,7 @@
             <p class="truncate font-semibold text-slate-900">{{ $appointment->doctor?->name }}</p>
             <span class="badge flex-none {{ $statusTone }}">{{ __($appointment->status->label()) }}</span>
         </div>
-        <p class="truncate text-sm text-slate-600">{{ $appointment->organization?->name }} · {{ $appointment->location?->name }}</p>
+        <p class="truncate text-sm text-slate-600">{{ $appointment->organization?->name }} · {{ $appointment->isOnline() ? __('Video call') : $appointment->location?->name }}</p>
         <p class="mt-1 flex flex-wrap items-center gap-x-3 text-sm text-slate-500">
             @if ($appointment->starts_at)<span class="flex items-center gap-1"><x-icon name="clock" class="h-4 w-4" />{{ $appointment->starts_at->format('h:i A') }}</span>@endif
             <span>{{ __('Token') }} {{ $appointment->token_number }}</span>

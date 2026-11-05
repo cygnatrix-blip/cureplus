@@ -19,7 +19,7 @@ class Prescription extends Model
     use Auditable, BelongsToOrganization, SoftDeletes;
 
     protected $fillable = [
-        'organization_id', 'visit_id', 'patient_id', 'location_id', 'doctor_user_id', 'doctor_name', 'doctor_qualification',
+        'organization_id', 'visit_id', 'patient_id', 'location_id', 'doctor_user_id', 'doctor_name', 'doctor_specialty', 'is_teleconsultation', 'doctor_qualification',
         'doctor_registration_number', 'lab_advice', 'patient_instructions', 'instructions_language', 'follow_up_on', 'issued_at',
     ];
 
@@ -28,6 +28,7 @@ class Prescription extends Model
         return [
             'lab_advice' => 'encrypted',
             'patient_instructions' => 'encrypted',
+            'is_teleconsultation' => 'boolean',
             'follow_up_on' => 'date',
             'issued_at' => 'datetime',
         ];

@@ -1,5 +1,6 @@
 <x-layouts.app :title="'Consultation: '.$visit->patient->name">
     <x-page-header :title="$visit->patient->name" :subtitle="$visit->patient->patient_code.' · '.($visit->patient->ageInYears() ?? '?').' yrs · '.ucfirst((string) $visit->patient->gender)">
+        @if ($visit->appointment)@include('app.appointments.partials.join-video', ['appointment' => $visit->appointment])@endif
         @can('prescribe', $visit)<a class="btn btn-primary" href="{{ route('app.prescriptions.edit', $visit) }}">{{ $visit->prescription ? 'Edit prescription' : 'Write prescription' }}</a>@endcan
         @if ($visit->prescription)<a class="btn btn-secondary" href="{{ route('app.prescriptions.show', $visit->prescription) }}">View prescription</a>@endif
         @if ($canEdit)<form method="POST" action="{{ route('app.visits.complete', $visit) }}" data-confirm="Complete this consultation? It cannot be edited afterwards.">@csrf<button class="btn btn-secondary">Complete</button></form>@endif

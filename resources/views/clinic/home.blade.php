@@ -70,6 +70,9 @@
                     <p class="mt-5 max-w-2xl text-lg leading-relaxed text-white/85">{{ \Illuminate\Support\Str::limit($about ?: __('Choose a doctor and a time that suits you. It takes about a minute.'), 180) }}</p>
                     <div class="mt-8 flex flex-wrap gap-3">
                         <a class="inline-flex min-h-13 items-center gap-2 rounded-xl bg-white px-7 font-semibold text-brand-800 shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl" href="{{ $bookUrl }}">{{ __('Book appointment') }}<x-icon name="arrow" class="h-4 w-4" /></a>
+                        @if ($doctors->contains('offers_video', true))
+                            <a class="inline-flex min-h-13 items-center gap-2 rounded-xl border border-white/40 px-6 font-semibold text-white transition hover:bg-white/10" href="{{ route('booking.show', [$organization->slug, 'mode' => 'online']) }}"><x-icon name="video" class="h-5 w-5" />{{ __('Book a video call') }}</a>
+                        @endif
                         @if ($phone)
                             <a class="inline-flex min-h-13 items-center gap-2 rounded-xl border border-white/40 px-6 font-semibold text-white transition hover:bg-white/10" href="{{ $telLink($phone) }}"><x-icon name="phone" class="h-5 w-5" />{{ $phone }}</a>
                         @endif
@@ -138,6 +141,7 @@
                                     <h3 class="flex items-center gap-1.5 text-lg font-bold text-slate-900">{{ $doctor['name'] }}@if ($doctor['verified'])<x-icon name="badge" class="h-5 w-5 flex-none text-brand-600" /><span class="sr-only">{{ __('Verified') }}</span>@endif</h3>
                                     @if ($doctor['specialty'])<p class="mt-1 font-medium text-brand-700">{{ $doctor['specialty'] }}</p>@endif
                                     @if ($doctor['qualification'])<p class="mt-1 text-sm text-slate-500">{{ $doctor['qualification'] }}</p>@endif
+                                    @if ($doctor['offers_video'])<p class="mt-2 flex items-center gap-1 text-sm font-medium text-brand-700"><x-icon name="video" class="h-4 w-4" />{{ __('Video calls available') }}</p>@endif
                                     <div class="mt-auto flex items-center justify-between gap-3 pt-5">
                                         @if ($doctor['fee'])<p class="text-sm text-slate-500">{{ __('Consultation fee') }}<span class="block text-base font-bold text-slate-900">{{ $doctor['fee'] }}</span></p>@else<span></span>@endif
                                         <a class="btn btn-primary" href="{{ route('booking.show', [$organization->slug, 'doctor' => $doctor['id']]) }}">{{ __('Book') }}</a>

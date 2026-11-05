@@ -30,7 +30,7 @@ class SignupDetailsTest extends TestCase
             'type' => 'solo_practice', 'name' => 'Rohan Roy', 'email' => 'rohan@example.test', 'mobile' => '9812345678',
             'password' => 'Password123', 'password_confirmation' => 'Password123', 'terms' => '1',
             'address_line' => '12 Park Road', 'city' => 'Kolkata', 'pincode' => '700016',
-            'registration_number' => 'WB-12345', 'registration_council' => 'West Bengal Medical Council', 'qualification' => 'MBBS, MD', 'specialty' => 'General Medicine',
+            'registration_number' => 'WB-12345', 'registration_council' => 'West Bengal Medical Council', 'qualification' => 'MBBS, MD', 'specialty' => 'General Physician',
         ];
     }
 
@@ -81,7 +81,7 @@ class SignupDetailsTest extends TestCase
     {
         $this->post('/register', $this->clinic(['owner_is_doctor' => '1']))->assertSessionHasErrors(['registration_number', 'registration_council', 'qualification']);
 
-        $this->post('/register', $this->clinic(['owner_is_doctor' => '1', 'document' => UploadedFile::fake()->create('l.pdf', 200, 'application/pdf'), 'registration_number' => 'WB-9', 'registration_council' => 'West Bengal Medical Council', 'qualification' => 'MBBS']))->assertRedirect();
+        $this->post('/register', $this->clinic(['owner_is_doctor' => '1', 'document' => UploadedFile::fake()->create('l.pdf', 200, 'application/pdf'), 'registration_number' => 'WB-9', 'specialty' => 'Cardiologist', 'registration_council' => 'West Bengal Medical Council', 'qualification' => 'MBBS']))->assertRedirect();
 
         $membership = Membership::withoutTenancy()->with('roles')->firstOrFail();
         $this->assertEqualsCanonicalizing(['owner', 'doctor'], $membership->roles->pluck('key')->all());

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\RegisterPatient;
+use App\Enums\AppointmentMode;
 use App\Enums\OtpPurpose;
 use App\Enums\VisitType;
 use App\Exceptions\SlotUnavailableException;
@@ -19,12 +20,14 @@ use App\Services\DoctorCalendar;
 use App\Services\Portal\PatientRecords;
 use App\Services\Portal\PortalBrand;
 use App\Services\Portal\PublicBooking;
+use App\Services\VideoConsultation;
 use App\Support\Mobile;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -44,7 +47,12 @@ class BookingController extends Controller
         $preselected = $doctorSlug ? $this->booking->doctorBySlug($organization, $doctorSlug) : null;
         $locations = $this->booking->locations($organization);
         $locationId = $request->integer('location') ?: ($locations->count() === 1 ? $locations->first()->id : null);
-        $doctors = $this->booking->doctorCards($organization, $locationId);
+        $allDoctors = $this->booking->doctorCards($organization, $locationId);
+        $wantsVideo = $request->query('mode') === AppointmentMode::Online->value && $allDoctors->contains('offers_video', true);
+        $allDoctors = $wantsVideo ? $allDoctors->where('offers_video', true)->values() : $allDoctors;
+        $specialties = $allDoctors->pluck('specialty')->filter()->unique()->sort()->values();
+        $specialty = $specialties->contains($request->query('specialty')) ? (string) $request->query('specialty') : null;
+        $doctors = $specialty ? $allDoctors->where('specialty', $specialty)->values() : $allDoctors;
         $doctorId = $preselected->user_id ?? ($request->integer('doctor') ?: ($doctors->count() === 1 ? $doctors->first()['id'] : null));
 
         $canShowSlots = $locationId && $doctorId && $this->booking->isBookableDoctor($organization, (int) $doctorId, (int) $locationId);
@@ -54,6 +62,9 @@ class BookingController extends Controller
             'organization' => $organization,
             'locations' => $locations,
             'doctors' => $doctors,
+            'specialties' => $specialties,
+            'specialty' => $specialty,
+            'wantsVideo' => $wantsVideo,
             'preselected' => $preselected,
             'locationId' => $locationId,
             'doctorId' => $doctorId,
@@ -66,7 +77,7 @@ class BookingController extends Controller
         ]);
     }
 
-    public function choose(Request $request, string $slug): RedirectResponse
+    public function choose(Request $request, string $slug, VideoConsultation $video): RedirectResponse
     {
         $organization = $this->booking->organization($slug);
         $data = $request->validate([
@@ -74,9 +85,13 @@ class BookingController extends Controller
             'doctor_user_id' => ['required', 'integer'],
             'starts_at' => ['required', 'date_format:Y-m-d H:i'],
             'visit_type' => ['nullable', 'in:new,follow_up'],
+            'mode' => ['nullable', Rule::enum(AppointmentMode::class)],
         ]);
 
         abort_unless($this->booking->isBookableDoctor($organization, (int) $data['doctor_user_id'], (int) $data['location_id']), 404);
+
+        $mode = $data['mode'] ?? AppointmentMode::InPerson->value;
+        abort_if($mode === AppointmentMode::Online->value && ! $video->offeredBy((int) $data['doctor_user_id']), 422);
 
         $request->session()->put(self::DRAFT, [
             'organization_id' => $organization->id,
@@ -84,6 +99,7 @@ class BookingController extends Controller
             'doctor_user_id' => (int) $data['doctor_user_id'],
             'starts_at' => $data['starts_at'],
             'visit_type' => $data['visit_type'] ?? 'new',
+            'mode' => $mode,
         ]);
 
         return redirect()->route('book.details', $slug);
@@ -169,6 +185,7 @@ class BookingController extends Controller
                 CarbonImmutable::createFromFormat('Y-m-d H:i', $draft['starts_at'])->startOfMinute(),
                 VisitType::from($draft['visit_type']),
                 'link',
+                AppointmentMode::tryFrom($draft['mode'] ?? '') ?? AppointmentMode::InPerson,
             );
         } catch (SlotUnavailableException) {
             $request->session()->forget(self::DRAFT);
@@ -271,7 +288,7 @@ class BookingController extends Controller
     }
 
     /**
-     * @return array{organization_id: int, location_id: int, doctor_user_id: int, starts_at: string, visit_type: string}|null
+     * @return array{organization_id: int, location_id: int, doctor_user_id: int, starts_at: string, visit_type: string, mode?: string}|null
      */
     private function draft(Request $request, Organization $organization): ?array
     {

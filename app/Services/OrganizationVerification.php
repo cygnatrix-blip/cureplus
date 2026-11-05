@@ -50,8 +50,8 @@ class OrganizationVerification
                 $profile = DoctorProfile::query()->where('user_id', $owner->user_id)->first();
                 $requirements[] = [
                     'key' => 'registration',
-                    'label' => 'Doctor registration number and medical council',
-                    'done' => $profile !== null && filled($profile->registration_number) && filled($profile->registration_council),
+                    'label' => $profile?->isAllied() ? 'Registration number and council, or a degree or membership certificate' : 'Doctor registration number and medical council',
+                    'done' => $profile?->hasCredentials() ?? false,
                 ];
             }
         }
@@ -236,7 +236,8 @@ class OrganizationVerification
     {
         foreach ($this->owners($organization) as $owner) {
             if ($owner->hasRole('doctor')) {
-                DoctorProfile::query()->where('user_id', $owner->user_id)->whereNotNull('registration_number')->get()
+                DoctorProfile::query()->where('user_id', $owner->user_id)->get()
+                    ->filter(fn (DoctorProfile $profile) => $profile->hasCredentials())
                     ->each(fn (DoctorProfile $profile) => $profile->forceFill(['verification_status' => 'verified', 'verified_at' => now(), 'verified_by' => $admin?->id])->save());
             }
         }

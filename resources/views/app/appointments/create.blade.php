@@ -40,6 +40,25 @@
                             @foreach (\App\Enums\VisitType::cases() as $case)<option value="{{ $case->value }}" @selected(old('visit_type') === $case->value)>{{ $case->label() }}</option>@endforeach
                         </select>
                     </div>
+                    @if ($offersVideo)
+                        <fieldset>
+                            <legend class="label">How will they meet?</legend>
+                            <div class="grid grid-cols-2 gap-2">
+                                @foreach (\App\Enums\AppointmentMode::cases() as $case)
+                                    <label class="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-slate-300 p-3 text-sm has-checked:border-brand-600 has-checked:bg-brand-50">
+                                        <input type="radio" name="mode" value="{{ $case->value }}" @checked(old('mode', 'in_person') === $case->value)>{{ $case->label() }}
+                                    </label>
+                                @endforeach
+                            </div>
+                            <label class="mt-2 flex items-start gap-2 text-sm text-slate-700">
+                                <input type="checkbox" name="video_consent" value="1" class="mt-1" @checked(old('video_consent'))>
+                                <span>For a video call: the patient has agreed to be seen by video</span>
+                            </label>
+                            @error('video_consent')<p class="field-error">{{ $message }}</p>@enderror
+                            <p class="hint">A walk-in is always at the clinic.</p>
+                            @error('mode')<p class="field-error">{{ $message }}</p>@enderror
+                        </fieldset>
+                    @endif
                     <fieldset>
                         <legend class="label">Slot</legend>
                         @if ($slots === [])

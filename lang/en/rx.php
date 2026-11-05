@@ -8,6 +8,8 @@ return [
     'bedtime' => 'At bedtime',
     'days' => ':count days',
     'medicines' => 'Medicines',
+    'plan' => 'Treatment plan',
+    'teleconsultation' => 'Video consultation',
     'instructions' => 'Instructions',
     'follow_up' => 'Follow-up on',
     'tests' => 'Tests advised',

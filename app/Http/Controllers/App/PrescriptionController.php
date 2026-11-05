@@ -5,6 +5,7 @@ namespace App\Http\Controllers\App;
 use App\Actions\SavePrescription;
 use App\Http\Controllers\Controller;
 use App\Jobs\SendPrescriptionEmail;
+use App\Models\DoctorProfile;
 use App\Models\FavouriteMedicine;
 use App\Models\Medicine;
 use App\Models\Prescription;
@@ -13,6 +14,7 @@ use App\Services\AuditLogger;
 use App\Services\OrganizationMail;
 use App\Services\PrescriptionPdf;
 use App\Support\DocumentLink;
+use App\Support\Specialties;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -42,6 +44,7 @@ class PrescriptionController extends Controller
         }
 
         return view('app.prescriptions.edit', [
+            'isAllied' => Specialties::isAllied(DoctorProfile::query()->where('user_id', $visit->doctor_user_id)->value('specialty')),
             'visit' => $visit,
             'prescription' => $prescription,
             'items' => collect($items)->map(fn ($item) => [
@@ -79,6 +82,12 @@ class PrescriptionController extends Controller
 
         if ($validator->fails()) {
             throw ValidationException::withMessages(['items_json' => $validator->errors()->first()]);
+        }
+
+        $outOfScope = $this->outsideProfession($visit, $validator->validated()['items']);
+
+        if ($outOfScope !== null) {
+            throw ValidationException::withMessages(['items_json' => "{$outOfScope} is outside your profession, so it cannot go on your plan. Please refer the patient to a doctor."]);
         }
 
         $prescription = $save($visit, ['items' => $validator->validated()['items']] + $data);
@@ -171,6 +180,39 @@ class PrescriptionController extends Controller
         return back()->with('success', 'Prescription queued for email.');
     }
 
+    /**
+     * Typed text is checked too, since otherwise it would be an easy way round the search.
+     * Exercises and diet advice match nothing in the catalogue, so they pass.
+     *
+     * @param  array<int, array{medicine_id?: int|null, medicine_name: string}>  $items
+     */
+    private function outsideProfession(Visit $visit, array $items): ?string
+    {
+        $specialty = DoctorProfile::query()->where('user_id', $visit->doctor_user_id)->value('specialty');
+
+        if (! Specialties::isAllied($specialty)) {
+            return null;
+        }
+
+        $allowed = Medicine::query()->withinScopeOf($specialty)->pluck('generic_name', 'id');
+        $allowedNames = $allowed->map(fn (string $name) => mb_strtolower($name))->unique()->flip();
+        $otherNames = Medicine::query()->whereNotIn('id', $allowed->keys())->pluck('generic_name')->map(fn (string $name) => mb_strtolower($name))->unique()->reject(fn (string $name) => $allowedNames->has($name));
+
+        foreach ($items as $item) {
+            $name = mb_strtolower(trim($item['medicine_name']));
+
+            if (! empty($item['medicine_id']) && ! $allowed->has((int) $item['medicine_id'])) {
+                return $item['medicine_name'];
+            }
+
+            if ($otherNames->contains(fn (string $other) => $name === $other || str_starts_with($name, "{$other} "))) {
+                return $item['medicine_name'];
+            }
+        }
+
+        return null;
+    }
+
     public function searchMedicines(Request $request): JsonResponse
     {
         $term = trim((string) $request->query('q'));
@@ -181,7 +223,9 @@ class PrescriptionController extends Controller
 
         $favouriteIds = FavouriteMedicine::query()->pluck('medicine_id')->flip();
 
-        $medicines = Medicine::query()->where('is_active', true)->search($term)->limit(25)->get()
+        $specialty = $request->user()->doctorProfile?->specialty;
+
+        $medicines = Medicine::query()->where('is_active', true)->search($term)->withinScopeOf($specialty)->rankedFor($specialty, $term)->limit(25)->get()
             ->sortByDesc(fn (Medicine $medicine) => $favouriteIds->has($medicine->id))
             ->take(15)
             ->values();
