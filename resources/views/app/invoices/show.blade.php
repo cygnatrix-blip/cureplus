@@ -1,8 +1,7 @@
 @php($money = \App\Support\Money::class)
 <x-layouts.app :title="$invoice->number">
     <div class="mb-3 flex flex-wrap items-center justify-end gap-2 print:hidden">
-        <span class="text-sm text-slate-600">Send from your own phone:</span>
-        <x-send-to-patient :mobile="$invoice->patient->mobile" event="document_ready" :link="$shareLink" :variables="['name' => $invoice->patient->name, 'document' => 'bill', 'clinic' => $organization->name, 'link' => $shareLink]" />
+        <x-send-to-patient labelled :patient="$invoice->patient" event="document_ready" :link="$shareLink" :variables="['name' => $invoice->patient->name, 'document' => 'bill', 'clinic' => $organization->name, 'link' => $shareLink]" />
     </div>
     <div class="mb-4 flex flex-wrap justify-end gap-2 print:hidden">
         <button type="button" class="btn btn-primary" data-print>Print</button>
@@ -38,7 +37,7 @@
                         <div class="flex justify-between gap-2"><span>{{ \App\Models\Payment::MODES[$payment->mode] ?? $payment->mode }} · {{ ucfirst($payment->status) }}</span><span class="font-medium">{{ $money::format($payment->amount_paise) }}</span></div>
                         <p class="text-xs text-slate-500">{{ $payment->paid_at?->format('d M Y H:i') }} {{ $payment->reference }}</p>
                         @if ($payment->status === 'pending' && $payment->gateway_link_url)
-                            <div class="mt-1"><x-send-to-patient :mobile="$invoice->patient->mobile" event="payment_link" :link="$payment->gateway_link_url" :variables="['name' => $invoice->patient->name, 'amount' => $money::format($payment->amount_paise), 'clinic' => $organization->name, 'link' => $payment->gateway_link_url]" /></div>
+                            <div class="mt-1"><x-send-to-patient :patient="$invoice->patient" event="payment_link" :link="$payment->gateway_link_url" :variables="['name' => $invoice->patient->name, 'amount' => $money::format($payment->amount_paise), 'clinic' => $organization->name, 'link' => $payment->gateway_link_url]" /></div>
                         @endif
                         @can('refund', $invoice)
                             @if ($payment->status === 'captured' && $payment->amount_paise > $payment->refundedPaise())

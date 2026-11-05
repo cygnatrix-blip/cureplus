@@ -338,7 +338,9 @@ To render a PDF there, the tenant is set just for that call: `$tenant->run($orga
 
 **Signup collects what approval needs:** `RegisterController` asks for the address, plus registration details for doctors and a proof document for clinics, so `OrganizationVerification::isComplete` is normally true at once.
 
-**Sending from staff's own phone:** `<x-send-to-patient>` builds `wa.me` and `sms:` addresses (`ManualMessage`) with the shared message wording, so it needs no WhatsApp Business account or SMS gateway. Staff press send in their own app, so CurePlus cannot record delivery. `DocumentLink` makes the signed link inside, which opens `public/document.blade.php`, a page with no sign-in. Opening it is audited, and it is not cached or indexed.
+**WhatsApp for patients:** `WhatsAppFactory::forOrganization` returns the practice's own Business number or nothing, never the platform's. When connected, automatic messages use it and the button posts an encrypted token to `PatientMessageController`.
+
+**Sending from the clinic's phone:** without Business, `<x-send-to-patient>` builds `wa.me` and `sms:` addresses (`ManualMessage`) with the shared message wording, so it needs no WhatsApp Business account or SMS gateway. Staff press send in their own app, so CurePlus cannot record delivery. `DocumentLink` makes the signed link inside, which opens `public/document.blade.php`, a page with no sign-in. Opening it is audited, and it is not cached or indexed.
 
 **Booking never matches on mobile.** It reuses a clinic's record only when the proved email and the name both match. Otherwise knowing someone's name and number would attach a stranger's login to their record, so a mismatch makes a new record for the clinic to review.
 

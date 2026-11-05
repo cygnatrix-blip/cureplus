@@ -25,7 +25,7 @@
                             @endif
                         @endcan
                         @if ($appointment->status === $status::CheckedIn)
-                            <x-send-to-patient :mobile="$appointment->patient?->mobile" event="token_called" :variables="['name' => $appointment->patient?->name, 'token' => $appointment->token_number, 'doctor' => $appointment->doctor?->name]" />
+                            <x-send-to-patient :patient="$appointment->patient" event="token_called" :variables="['name' => $appointment->patient?->name, 'token' => $appointment->token_number, 'doctor' => $appointment->doctor?->name]" />
                         @endif
                         @can('billing.manage')<a class="btn btn-sm btn-secondary" href="{{ route('app.invoices.create', ['appointment' => $appointment->id]) }}">Bill</a>@endcan
                         @if (in_array($appointment->status, [$status::Booked, $status::CheckedIn, $status::InConsultation], true))

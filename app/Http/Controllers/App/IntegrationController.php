@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MessageLog;
 use App\Models\OrganizationIntegration;
 use App\Services\AuditLogger;
+use App\Services\Messaging\WhatsAppFactory;
 use App\Services\OrganizationMail;
 use App\Services\Payments\GatewayFactory;
 use App\Tenancy\TenantContext;
@@ -151,6 +152,26 @@ class IntegrationController extends Controller
         $this->save('whatsapp', $data, ['access_token'], ['phone_number_id', 'business_account_id'], (bool) ($data['is_enabled'] ?? false));
 
         return back()->with('success', 'WhatsApp settings saved.');
+    }
+
+    public function testWhatsapp(WhatsAppFactory $whatsApp): RedirectResponse
+    {
+        $integration = OrganizationIntegration::query()->where('kind', 'whatsapp')->first();
+        $provider = $integration ? $whatsApp->fromIntegration($integration) : null;
+
+        if ($integration === null || $provider === null) {
+            return back()->with('error', 'Save your phone number ID and access token first.');
+        }
+
+        try {
+            $passed = $provider->testConnection();
+        } catch (ConnectionException) {
+            $passed = false;
+        }
+
+        $integration->forceFill(['last_tested_at' => now(), 'last_test_result' => $passed ? 'passed' : 'failed'])->save();
+
+        return back()->with($passed ? 'success' : 'error', $passed ? 'WhatsApp accepted your number and token.' : 'WhatsApp rejected these details. Check the phone number ID and access token.');
     }
 
     /**

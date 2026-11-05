@@ -14,6 +14,14 @@ class CloudWhatsAppProvider implements WhatsAppProvider
         private readonly string $apiVersion,
     ) {}
 
+    /**
+     * Asks Meta about this number, which proves the number and the token belong together.
+     */
+    public function testConnection(): bool
+    {
+        return Http::withToken($this->token)->timeout(15)->get("https://graph.facebook.com/{$this->apiVersion}/{$this->phoneNumberId}")->successful();
+    }
+
     public function sendTemplate(string $to, string $template, array $parameters): string
     {
         $response = Http::withToken($this->token)

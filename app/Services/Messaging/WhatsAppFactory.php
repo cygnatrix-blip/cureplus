@@ -8,24 +8,36 @@ use App\Models\OrganizationIntegration;
 class WhatsAppFactory
 {
     /**
-     * The organization's own sender if it has one, otherwise the platform's, otherwise none.
+     * With an organization: its own WhatsApp Business number, or nothing. Its patients must never
+     * hear from the platform's number, just as they never get email from the platform's address.
+     * Without one: the platform's own number, for writing to practice owners.
      */
     public function forOrganization(?int $organizationId): ?WhatsAppProvider
     {
-        $own = $organizationId === null ? null : OrganizationIntegration::withoutTenancy()
+        if ($organizationId === null) {
+            return $this->make(config('messages.whatsapp.phone_number_id'), config('messages.whatsapp.token'));
+        }
+
+        $own = OrganizationIntegration::withoutTenancy()
             ->where('organization_id', $organizationId)
             ->where('kind', 'whatsapp')
             ->where('is_enabled', true)
             ->first();
 
-        $config = config('messages.whatsapp');
-        $phoneNumberId = $own->config['phone_number_id'] ?? $config['phone_number_id'];
-        $token = $own->config['access_token'] ?? $config['token'];
+        return $own === null ? null : $this->fromIntegration($own);
+    }
 
+    public function fromIntegration(OrganizationIntegration $integration): ?CloudWhatsAppProvider
+    {
+        return $this->make($integration->config['phone_number_id'] ?? null, $integration->config['access_token'] ?? null);
+    }
+
+    private function make(mixed $phoneNumberId, mixed $token): ?CloudWhatsAppProvider
+    {
         if (blank($phoneNumberId) || blank($token)) {
             return null;
         }
 
-        return new CloudWhatsAppProvider((string) $phoneNumberId, (string) $token, (string) $config['language'], (string) $config['api_version']);
+        return new CloudWhatsAppProvider((string) $phoneNumberId, (string) $token, (string) config('messages.whatsapp.language'), (string) config('messages.whatsapp.api_version'));
     }
 }

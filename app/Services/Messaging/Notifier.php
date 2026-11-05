@@ -84,6 +84,24 @@ class Notifier
     }
 
     /**
+     * Staff pressing the WhatsApp button at a practice that has WhatsApp Business connected.
+     *
+     * @param  array<string, string|int>  $variables
+     */
+    public function sendOnWhatsApp(Patient $patient, string $event, array $variables): bool
+    {
+        $organizationId = (int) $patient->organization_id;
+
+        if ($this->paidChannel($organizationId) !== 'whatsapp') {
+            return false;
+        }
+
+        $this->queue($organizationId, 'whatsapp', $event, $patient->mobile, $variables + ['name' => $patient->name], null);
+
+        return true;
+    }
+
+    /**
      * Whether a message could actually reach this patient, so staff are never told "sent" when it was not.
      */
     public function canReachPatient(Patient $patient): bool

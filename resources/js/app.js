@@ -26,6 +26,13 @@ Alpine.data('menu', () => ({
     },
 }));
 
+Alpine.data('smsHint', () => ({
+    open: false,
+    toggle() {
+        this.open = !this.open;
+    },
+}));
+
 Alpine.data('copyLink', () => ({
     label: 'Copy link',
     async copy() {

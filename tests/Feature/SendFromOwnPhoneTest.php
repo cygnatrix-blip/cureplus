@@ -59,7 +59,8 @@ class SendFromOwnPhoneTest extends TestCase
         $page->assertSee('https://wa.me/919812345678?text=', false)
             ->assertSee('sms:+919812345678', false)
             ->assertSee('Copy link')
-            ->assertSee('lg:hidden', false);
+            ->assertSee('lg:hidden', false)
+            ->assertSee('Open this page on your phone to send it.');
         $this->assertStringNotContainsString('Viral', $this->messageIn((string) $page->getContent()), 'The message itself must not name the diagnosis.');
     }
 

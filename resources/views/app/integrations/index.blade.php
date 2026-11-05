@@ -91,13 +91,27 @@
 
         <form method="POST" action="{{ route('app.integrations.whatsapp') }}" class="card card-body space-y-3">
             @csrf
-            <h2 class="font-semibold text-slate-900">WhatsApp sender</h2>
-            <p class="text-sm text-slate-600">From the WhatsApp Business Platform. Without this, the platform's sender is used if it has one.</p>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <h2 class="font-semibold text-slate-900">WhatsApp Business (optional)</h2>
+                <span @class(['badge', 'badge-green' => $whatsapp?->is_enabled && $whatsapp?->last_test_result !== 'failed', 'badge-red' => $whatsapp?->last_test_result === 'failed', 'badge-slate' => ! $whatsapp?->is_enabled && $whatsapp?->last_test_result !== 'failed'])>{{ $whatsapp?->last_test_result === 'failed' ? 'Not working' : ($whatsapp?->is_enabled ? 'Connected' : 'Not connected') }}</span>
+            </div>
+            <p class="text-sm text-slate-600"><strong>When connected:</strong> reminders and other messages go out automatically from your Business number, and the WhatsApp buttons send through it too.</p>
+            <p class="text-sm text-slate-600"><strong>Without it:</strong> the WhatsApp buttons open WhatsApp on the device you are using, with the message ready to send. Messages come from whichever number is signed in there, so sign in with your clinic or chamber number on the reception phone or computer.</p>
             <x-field name="phone_number_id" label="Phone number ID" :value="$whatsapp?->config['phone_number_id'] ?? null" />
             <x-field name="business_account_id" label="Business account ID" :value="$whatsapp?->config['business_account_id'] ?? null" />
             <x-field name="access_token" label="Access token" type="password" autocomplete="new-password" :placeholder="$whatsapp?->masked('access_token')" />
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_enabled" value="1" @checked($whatsapp?->is_enabled)> Send from this number</label>
+            <details class="rounded-lg bg-slate-50 p-3 text-sm">
+                <summary class="cursor-pointer font-medium">Message templates to get approved by Meta</summary>
+                <p class="mt-2 text-slate-600">WhatsApp only delivers approved templates. Create these in Meta Business Manager, with the same names and parameters in this order.</p>
+                <ul class="mt-2 space-y-1">
+                    @foreach (config('messages.events') as $definition)
+                        <li><span class="font-mono text-xs">{{ $definition['whatsapp_template'] }}</span> <span class="text-slate-500">{{ implode(', ', $definition['params']) }}</span></li>
+                    @endforeach
+                </ul>
+            </details>
             <button class="btn btn-primary">Save WhatsApp</button>
         </form>
+        <form method="POST" action="{{ route('app.integrations.whatsapp.test') }}">@csrf<button class="btn btn-secondary">Test WhatsApp connection</button></form>
     </div>
 </x-layouts.app>

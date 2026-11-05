@@ -4,6 +4,9 @@
 
 ### Send from your own phone
 
+- WhatsApp buttons send through the practice's WhatsApp Business number when connected. Patients no longer fall back to the platform's number.
+- Test connection and a template list for WhatsApp Business under Integrations.
+- The SMS button also shows on computers, and explains that it opens on a phone.
 - WhatsApp and SMS buttons on prescriptions, bills, payment links, appointments, the queue and follow-ups open staff's own apps with the message ready.
 - Signed links now open a page showing the prescription or bill, with a PDF download, and last 30 days.
 

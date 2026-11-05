@@ -11,7 +11,7 @@
                     <a class="ml-2 text-slate-700 underline" href="tel:{{ $followUp->patient?->mobile }}">{{ $followUp->patient?->mobile }}</a>
                     <p class="text-slate-500">Due {{ $followUp->due_on->format('d M Y') }} · {{ $followUp->doctor?->name }} {{ $followUp->call_notes ? '· '.$followUp->call_notes : '' }}</p>
                 </div>
-                <x-send-to-patient :mobile="$followUp->patient?->mobile" event="follow_up_due" :variables="['name' => $followUp->patient?->name, 'doctor' => $followUp->doctor?->name, 'clinic' => $tenant->organization()?->name, 'date' => $followUp->due_on->format('d M Y')]" />
+                <x-send-to-patient :patient="$followUp->patient" event="follow_up_due" :variables="['name' => $followUp->patient?->name, 'doctor' => $followUp->doctor?->name, 'clinic' => $tenant->organization()?->name, 'date' => $followUp->due_on->format('d M Y')]" />
                 <form method="POST" action="{{ route('app.follow-ups.update', $followUp) }}" class="flex flex-wrap gap-1">
                     @csrf @method('PUT')
                     <input class="input min-h-9 w-40 py-1" name="call_notes" placeholder="Call notes" aria-label="Call notes">

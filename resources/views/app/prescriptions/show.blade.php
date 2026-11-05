@@ -2,8 +2,7 @@
 @php($letterhead = $prescription->location->letterhead ?? [])
 <x-layouts.app title="Prescription">
     <div class="mb-3 flex flex-wrap items-center justify-end gap-2 print:hidden">
-        <span class="text-sm text-slate-600">Send from your own phone:</span>
-        <x-send-to-patient :mobile="$prescription->patient->mobile" event="document_ready" :link="$shareLink" :variables="['name' => $prescription->patient->name, 'document' => 'prescription', 'clinic' => $tenant->organization()?->name, 'link' => $shareLink]" />
+        <x-send-to-patient labelled :patient="$prescription->patient" event="document_ready" :link="$shareLink" :variables="['name' => $prescription->patient->name, 'document' => 'prescription', 'clinic' => $tenant->organization()?->name, 'link' => $shareLink]" />
     </div>
     <div class="mb-4 flex flex-wrap justify-end gap-2 print:hidden">
         <button type="button" class="btn btn-primary" data-print>Print</button>

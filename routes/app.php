@@ -22,6 +22,7 @@ use App\Http\Controllers\App\MedicineController;
 use App\Http\Controllers\App\OrganizationSettingsController;
 use App\Http\Controllers\App\PatientController;
 use App\Http\Controllers\App\PatientHistoryController;
+use App\Http\Controllers\App\PatientMessageController;
 use App\Http\Controllers\App\PrescriptionController;
 use App\Http\Controllers\App\QueueController;
 use App\Http\Controllers\App\ReportController;
@@ -146,6 +147,8 @@ Route::prefix('app')->name('app.')->middleware(['auth:web', 'account.active', 'n
                 Route::post('/prescriptions/{prescription}/email', [PrescriptionController::class, 'email'])->middleware('org.approved')->can('print', 'prescription')->name('prescriptions.email');
                 Route::post('/prescriptions/{prescription}/share', [DocumentShareController::class, 'prescription'])->middleware('throttle:30,1')->middleware('org.approved')->can('print', 'prescription')->name('prescriptions.share');
 
+                Route::post('/messages/whatsapp', [PatientMessageController::class, 'whatsapp'])->middleware(['org.approved', 'throttle:60,1'])->can('dashboard.view')->name('messages.whatsapp');
+
                 Route::get('/medicines', [MedicineController::class, 'index'])->can('prescriptions.manage')->name('medicines.index');
                 Route::get('/medicines/search', [PrescriptionController::class, 'searchMedicines'])->can('prescriptions.manage')->name('medicines.search');
                 Route::post('/medicines/favourites', [MedicineController::class, 'favourite'])->can('prescriptions.manage')->name('medicines.favourite');
@@ -179,6 +182,7 @@ Route::prefix('app')->name('app.')->middleware(['auth:web', 'account.active', 'n
                 Route::post('/integrations/cashfree/test', [IntegrationController::class, 'testCashfree'])->can('integrations.manage')->name('integrations.cashfree.test');
                 Route::post('/integrations/smtp', [IntegrationController::class, 'saveSmtp'])->can('integrations.manage')->name('integrations.smtp');
                 Route::post('/integrations/smtp/test', [IntegrationController::class, 'testSmtp'])->can('integrations.manage')->name('integrations.smtp.test');
+                Route::post('/integrations/whatsapp/test', [IntegrationController::class, 'testWhatsapp'])->can('integrations.manage')->name('integrations.whatsapp.test');
                 Route::post('/integrations/whatsapp', [IntegrationController::class, 'saveWhatsapp'])->can('integrations.manage')->name('integrations.whatsapp');
 
                 Route::get('/settings/organization', [OrganizationSettingsController::class, 'edit'])->can('settings.manage')->name('settings.organization');
