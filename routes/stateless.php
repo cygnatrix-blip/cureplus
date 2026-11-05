@@ -37,6 +37,8 @@ Route::get('/brand/{slug}/icon-{size}.png', [BrandingController::class, 'icon'])
 Route::middleware(['signed', 'throttle:60,1'])->group(function () {
     Route::get('/files/prescriptions/{prescription}', [DocumentLinkController::class, 'prescription'])->whereNumber('prescription')->name('files.prescription');
     Route::get('/files/invoices/{invoice}', [DocumentLinkController::class, 'invoice'])->whereNumber('invoice')->name('files.invoice');
+    Route::get('/files/prescriptions/{prescription}/pdf', [DocumentLinkController::class, 'prescriptionPdf'])->whereNumber('prescription')->name('files.prescription.pdf');
+    Route::get('/files/invoices/{invoice}/pdf', [DocumentLinkController::class, 'invoicePdf'])->whereNumber('invoice')->name('files.invoice.pdf');
 });
 
 Route::middleware('throttle:120,1')->group(function () {

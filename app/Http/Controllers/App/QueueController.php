@@ -53,7 +53,7 @@ class QueueController extends Controller
             ->where('location_id', $this->tenant->location()?->id)
             ->whereDate('scheduled_on', today())
             ->whereNotIn('status', [AppointmentStatus::Cancelled->value])
-            ->with(['patient:id,name,patient_code', 'doctor:id,name', 'visit:id,appointment_id'])
+            ->with(['patient:id,name,mobile,patient_code', 'doctor:id,name', 'visit:id,appointment_id'])
             ->orderBy('token_number')
             ->get()
             ->groupBy('doctor_user_id');

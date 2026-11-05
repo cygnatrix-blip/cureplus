@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Send from your own phone
+
+- WhatsApp and SMS buttons on prescriptions, bills, payment links, appointments, the queue and follow-ups open staff's own apps with the message ready.
+- Signed links now open a page showing the prescription or bill, with a PDF download, and last 30 days.
+
 ### Signup details and email separation
 
 - Signup now asks for everything approval needs: address, registration details for doctors, and a proof document for clinics. Clinic owners who see patients can say so.

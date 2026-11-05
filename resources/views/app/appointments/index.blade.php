@@ -31,7 +31,8 @@
                             <td class="text-right">
                                 @can('update', $appointment)
                                     @if (in_array($appointment->status, [\App\Enums\AppointmentStatus::Booked, \App\Enums\AppointmentStatus::CheckedIn], true))
-                                        <div class="flex justify-end gap-1">
+                                        <div class="flex flex-wrap justify-end gap-1">
+                                            <x-send-to-patient :mobile="$appointment->patient?->mobile" event="appointment_reminder" :variables="['name' => $appointment->patient?->name, 'doctor' => $appointment->doctor?->name, 'clinic' => $tenant->organization()?->name, 'time' => $appointment->starts_at?->format('d M, h:i A') ?? $appointment->scheduled_on->format('d M')]" />
                                             <a class="btn btn-sm btn-secondary" href="{{ route('app.appointments.edit', $appointment) }}">Reschedule</a>
                                             <form method="POST" action="{{ route('app.appointments.cancel', $appointment) }}" class="flex gap-1" data-confirm="Cancel this appointment?">
                                                 @csrf

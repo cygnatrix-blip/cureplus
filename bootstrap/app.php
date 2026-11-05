@@ -20,6 +20,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\PostTooLargeException;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Exceptions\InvalidSignatureException;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Route;
 
@@ -87,6 +88,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // A file bigger than the server allows never reaches validation, so answer it here.
         $exceptions->render(fn (PostTooLargeException $exception, Request $request) => back()->with('error', 'That file is too large. Please choose a smaller one.'));
+
+        // A patient opening an old link should know what to do, not see "access denied".
+        $exceptions->render(function (InvalidSignatureException $exception, Request $request) {
+            return $request->routeIs('files.*') ? response()->view('errors.layout', ['heading' => 'This link has expired', 'text' => 'Please ask your clinic to send a new one, or sign in to your account to see your records.'], 403) : null;
+        });
 
         $exceptions->render(fn (OtpDeliveryException $exception, Request $request) => back()->withInput()->with('error', __('We could not send the email. Please try again in a moment.')));
 

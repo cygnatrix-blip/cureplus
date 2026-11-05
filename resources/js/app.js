@@ -26,6 +26,21 @@ Alpine.data('menu', () => ({
     },
 }));
 
+Alpine.data('copyLink', () => ({
+    label: 'Copy link',
+    async copy() {
+        const { link } = this.$el.dataset;
+
+        try {
+            await navigator.clipboard.writeText(link);
+            this.label = 'Copied';
+        } catch {
+            // Clipboard access is refused on some browsers, so let them copy it by hand.
+            window.prompt('Copy this link', link);
+        }
+    },
+}));
+
 Alpine.data('toast', () => ({
     visible: true,
     init() {

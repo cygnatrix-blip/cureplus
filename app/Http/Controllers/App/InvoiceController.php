@@ -19,6 +19,7 @@ use App\Services\OrganizationMail;
 use App\Services\Payments\GatewayFactory;
 use App\Services\TenantDoctors;
 use App\Support\Csv;
+use App\Support\DocumentLink;
 use App\Support\Money;
 use App\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Builder;
@@ -147,6 +148,7 @@ class InvoiceController extends Controller
             'invoice' => $invoice,
             'organization' => $this->tenant->organization(),
             'onlineEnabled' => $gateways->forOrganization((int) $this->tenant->id()) !== null,
+            'shareLink' => DocumentLink::invoice($invoice->id),
         ]);
     }
 

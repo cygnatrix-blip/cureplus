@@ -339,7 +339,10 @@ class MessagingTest extends TestCase
         $this->get(route('files.prescription', $prescription->id))->assertForbidden();
 
         $signed = URL::temporarySignedRoute('files.prescription', now()->addHour(), ['prescription' => $prescription->id]);
-        $this->assertStringStartsWith('%PDF', $this->get($signed)->assertOk()->getContent());
+        $this->get($signed)->assertOk()->assertSee('Download PDF');
+
+        $pdf = URL::temporarySignedRoute('files.prescription.pdf', now()->addHour(), ['prescription' => $prescription->id]);
+        $this->assertStringStartsWith('%PDF', $this->get($pdf)->assertOk()->getContent());
 
         $this->travel(2)->hours();
         $this->get($signed)->assertForbidden();

@@ -12,6 +12,7 @@ use App\Models\Visit;
 use App\Services\AuditLogger;
 use App\Services\OrganizationMail;
 use App\Services\PrescriptionPdf;
+use App\Support\DocumentLink;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -140,7 +141,7 @@ class PrescriptionController extends Controller
         $audit->record('prescriptions.viewed', $prescription);
         $prescription->load(['items', 'patient', 'location', 'visit:id,diagnosis']);
 
-        return view('app.prescriptions.show', ['prescription' => $prescription]);
+        return view('app.prescriptions.show', ['prescription' => $prescription, 'shareLink' => DocumentLink::prescription($prescription->id)]);
     }
 
     public function pdf(Prescription $prescription, PrescriptionPdf $pdf, AuditLogger $audit): Response

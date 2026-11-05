@@ -60,8 +60,9 @@ return [
     // How long a patient's consent to share records with a doctor lasts.
     'consent_days' => (int) env('CONSENT_DAYS', 30),
 
-    // How long a prescription or bill link sent by WhatsApp or SMS keeps working.
-    'document_link_hours' => (int) env('DOCUMENT_LINK_HOURS', 72),
+    // How long a prescription or bill link sent to a patient keeps working: 30 days. Long enough
+    // to reopen at the pharmacy or a follow-up, and short enough that an old forwarded link dies.
+    'document_link_hours' => (int) env('DOCUMENT_LINK_HOURS', 720),
 
     'locales' => ['en' => 'English', 'hi' => 'हिन्दी', 'bn' => 'বাংলা'],
 

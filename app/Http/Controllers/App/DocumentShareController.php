@@ -7,9 +7,9 @@ use App\Models\Invoice;
 use App\Models\Patient;
 use App\Models\Prescription;
 use App\Services\Messaging\Notifier;
+use App\Support\DocumentLink;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\URL;
 
 class DocumentShareController extends Controller
 {
@@ -17,12 +17,12 @@ class DocumentShareController extends Controller
 
     public function prescription(Prescription $prescription): RedirectResponse
     {
-        return $this->share((int) $prescription->patient_id, 'prescription', URL::temporarySignedRoute('files.prescription', now()->addHours((int) config('cureplus.document_link_hours')), ['prescription' => $prescription->id]));
+        return $this->share((int) $prescription->patient_id, 'prescription', DocumentLink::prescription($prescription->id));
     }
 
     public function invoice(Invoice $invoice): RedirectResponse
     {
-        return $this->share((int) $invoice->patient_id, 'bill', URL::temporarySignedRoute('files.invoice', now()->addHours((int) config('cureplus.document_link_hours')), ['invoice' => $invoice->id]));
+        return $this->share((int) $invoice->patient_id, 'bill', DocumentLink::invoice($invoice->id));
     }
 
     private function share(int $patientId, string $document, string $link): RedirectResponse
