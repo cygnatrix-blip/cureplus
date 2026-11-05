@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Enums\OrganizationStatus;
 use App\Models\DoctorProfile;
 use App\Models\Medicine;
 use App\Models\Template;
+use App\Models\User;
 use App\Support\Specialties;
 use Database\Seeders\MedicineCatalogueSeeder;
 use Illuminate\Http\UploadedFile;
@@ -58,6 +60,35 @@ class SpecialtyAndCatalogueTest extends TestCase
         $this->get(route('app.account'))->assertOk()->assertSee('<option value="Sports Medicine" selected>', false);
         $this->post(route('app.doctor-profile.update'), ['specialty' => 'Sports Medicine', 'qualification' => 'MD'])->assertSessionHasNoErrors();
         $this->post(route('app.doctor-profile.update'), ['specialty' => 'Astrology'])->assertSessionHasErrors('specialty');
+    }
+
+    public function test_my_account_keeps_the_practice_menu(): void
+    {
+        [$organization, $owner] = $this->organizationWithOwner();
+
+        $this->actingAs($owner, 'web')->get(route('app.account'))->assertOk()->assertSee('Patients')->assertSee($organization->name);
+    }
+
+    public function test_my_account_still_opens_for_a_suspended_practice_without_its_menu(): void
+    {
+        [$organization, $owner] = $this->organizationWithOwner();
+        $organization->forceFill(['status' => OrganizationStatus::Suspended])->save();
+
+        $this->actingAs($owner, 'web')->get(route('app.account'))->assertOk()->assertSee('Change password')->assertDontSee(route('app.patients.index'));
+    }
+
+    public function test_my_account_still_opens_for_someone_with_no_practice(): void
+    {
+        $this->actingAs(User::factory()->create(), 'web')->get(route('app.account'))->assertOk()->assertSee('Change password');
+    }
+
+    public function test_my_account_shows_doctor_details_when_the_doctor_role_is_at_another_practice(): void
+    {
+        [$first, $user, $location] = $this->organizationWithOwner();
+        [$second] = $this->organizationWithOwner();
+        $this->addMember($second, ['doctor'], $user);
+
+        $this->actingAs($user, 'web')->withSession(['active_organization_id' => $first->id])->get(route('app.account'))->assertOk()->assertSee('Doctor details')->assertSee($first->name);
     }
 
     public function test_upgrading_moves_old_names_onto_the_list(): void

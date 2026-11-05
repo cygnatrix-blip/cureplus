@@ -15,7 +15,7 @@
             <div class="flex items-start gap-3 text-slate-700"><x-icon name="calendar" class="h-5 w-5 flex-none text-brand-600" /><div><dt class="sr-only">{{ __('Date') }}</dt><dd class="font-medium">{{ $startsAt->format('l, d M Y') }}</dd><dd class="text-slate-500">{{ $startsAt->format('h:i A') }}</dd></div></div>
         @endisset
         @if (($draft['mode'] ?? null) === 'online')
-            <div class="flex items-start gap-3 text-slate-700"><x-icon name="video" class="h-5 w-5 flex-none text-brand-600" /><div><dt class="sr-only">{{ __('Where') }}</dt><dd class="font-medium">{{ __('Video call') }}</dd><dd class="text-slate-500">{{ __('You will get a link to join. The call runs on Jitsi or Google Meet, not on this site, and we do not record it.') }}</dd></div></div>
+            <div class="flex items-start gap-3 text-slate-700"><x-icon name="video" class="h-5 w-5 flex-none text-brand-600" /><div><dt class="sr-only">{{ __('Where') }}</dt><dd class="font-medium">{{ __('Video call') }}</dd><dd class="text-slate-500">{{ __('You will get a link to join. The call runs on Google Meet, not on this site, and we do not record it.') }}</dd></div></div>
         @elseif ($location)
             <div class="flex items-start gap-3 text-slate-700"><x-icon name="pin" class="h-5 w-5 flex-none text-brand-600" /><div><dt class="sr-only">{{ __('Location') }}</dt><dd class="font-medium">{{ $location->name }}</dd><dd class="text-slate-500">{{ collect([$location->address_line, $location->city])->filter()->join(', ') }}</dd></div></div>
         @endif

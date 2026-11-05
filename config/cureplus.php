@@ -20,8 +20,6 @@ return [
     ],
 
     'video' => [
-        // Free, with nothing to set up. Point this at your own Jitsi server if you ever run one.
-        'jitsi_url' => env('VIDEO_JITSI_URL', 'https://meet.jit.si'),
         // How long a patient has to pay for a video call they booked before the slot is released.
         'pay_within_minutes' => (int) env('VIDEO_PAY_WITHIN_MINUTES', 30),
     ],

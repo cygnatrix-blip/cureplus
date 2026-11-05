@@ -138,8 +138,18 @@ Create templates in Meta Business Manager with these exact names and body parame
 | `organization_access_ending` | name, clinic, date |
 | `doctor_verified` | name |
 | `doctor_rejected` | name, reason |
+| `appointment_cancelled` | name, doctor, clinic, time |
+| `appointment_moved` | name, doctor, clinic, time |
+| `video_consult` | name, doctor, clinic, time, link |
+| `video_consult_now` | name, doctor, link |
+| `video_payment_missed` | name, doctor, clinic, time |
+| `video_refund_needed` | name, clinic, time |
 
 Each practice connects its own WhatsApp Business number under Integrations, and needs the patient templates approved in its own Meta account. Patients never hear from the platform's number. The platform's own sender (`WHATSAPP_TOKEN` and `WHATSAPP_PHONE_NUMBER_ID`) is only for messages to practice owners and doctors (the `organization_*` and `doctor_*` templates), and without it they get those by email only. Until a sender is configured, patient messages go by SMS if a gateway is set up. With neither, patients get email and push only.
+
+### Video calls
+
+There is nothing to set up on the server. Each doctor creates a Google Meet link at meet.google.com (New meeting, then Create a meeting for later) and saves it under My account, Video calls. Patients can only book video with a doctor who has turned it on and saved a link. Where a practice has a payment gateway, patients who book themselves pay first and get the link afterwards. `VIDEO_PAY_WITHIN_MINUTES` sets how long the slot is held.
 
 ### Web push
 

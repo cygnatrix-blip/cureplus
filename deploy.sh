@@ -7,7 +7,7 @@
 set -euo pipefail
 
 PHP_BIN="${PHP_BIN:-php}"
-COMPOSER_BIN="${COMPOSER_BIN:-composer}"
+COMPOSER_BIN="${COMPOSER_BIN:-$(command -v composer)}"
 BRANCH="${BRANCH:-main}"
 
 # composer.json turns off Composer's runtime check, so the version is enforced here.
@@ -31,7 +31,8 @@ git fetch --prune origin
 git reset --hard "origin/${BRANCH}"
 
 echo "==> Installing PHP dependencies"
-"$COMPOSER_BIN" install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+# Run through PHP_BIN, because the command-line default can be an older PHP than the website uses.
+"$PHP_BIN" "$COMPOSER_BIN" install --no-dev --prefer-dist --optimize-autoloader --no-interaction
 
 if [ "${BUILD_ASSETS:-0}" = "1" ]; then
     echo "==> Building assets"

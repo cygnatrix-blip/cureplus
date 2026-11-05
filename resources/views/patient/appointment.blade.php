@@ -40,7 +40,7 @@
         @if ($appointment->canJoinVideo())
             <section class="card space-y-2 p-5">
                 <a class="btn btn-primary w-full" href="{{ $appointment->video_link }}" target="_blank" rel="noopener noreferrer"><x-icon name="video" />{{ __('Join video call') }}</a>
-                <p class="text-sm text-slate-600">{{ __('Join at your appointment time, and allow your camera and microphone. If it says you are waiting, stay on the page until the doctor joins. Your phone may offer to open an app, which is free.') }}</p>
+                <p class="text-sm text-slate-600">{{ __('Join at your appointment time, and allow your camera and microphone. Ask to join, then stay on the page until the doctor lets you in. Your phone may offer to open the Google Meet app, which is free.') }}</p>
             </section>
         @endif
         @if ($canPay && ! $appointment->isAwaitingPayment())

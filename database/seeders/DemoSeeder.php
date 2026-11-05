@@ -89,7 +89,7 @@ class DemoSeeder extends Seeder
      */
     private function clinicalData(Organization $clinic, Location $location, User $doctor): void
     {
-        DoctorProfile::query()->firstOrCreate(['user_id' => $doctor->id], ['qualification' => 'MBBS, MD', 'specialty' => 'General Physician', 'offers_video' => true, 'registration_number' => 'WB-12345', 'registration_council' => 'West Bengal Medical Council'])->forceFill(['verification_status' => 'verified', 'verified_at' => now()])->save();
+        DoctorProfile::query()->firstOrCreate(['user_id' => $doctor->id], ['qualification' => 'MBBS, MD', 'specialty' => 'General Physician', 'offers_video' => true, 'video_link' => 'https://meet.google.com/abc-defg-hij', 'registration_number' => 'WB-12345', 'registration_council' => 'West Bengal Medical Council'])->forceFill(['verification_status' => 'verified', 'verified_at' => now()])->save();
 
         foreach ([1, 2, 3, 4, 5, 6] as $weekday) {
             DoctorAvailability::withoutTenancy()->firstOrCreate(

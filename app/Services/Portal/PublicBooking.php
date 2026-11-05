@@ -59,7 +59,7 @@ class PublicBooking
             ->whereHas('roles', fn ($query) => $query->where('key', 'doctor'))
             ->when(config('cureplus.organizations.doctors_need_approval'), fn ($query) => $query->whereHas('user.doctorProfile', fn ($query) => $query->where('verification_status', 'verified')))
             ->when($locationId, fn ($query) => $query->whereHas('locations', fn ($query) => $query->where('locations.id', $locationId)))
-            ->with(['user:id,name', 'user.doctorProfile:id,user_id,qualification,specialty,offers_video,verification_status,photo_path'])
+            ->with(['user:id,name', 'user.doctorProfile:id,user_id,qualification,specialty,offers_video,video_link,verification_status,photo_path'])
             ->get()
             ->toBase();
     }
@@ -87,7 +87,7 @@ class PublicBooking
                 'specialty' => $profile?->specialty,
                 'qualification' => $profile?->qualification,
                 'verified' => $profile?->verification_status === 'verified',
-                'offers_video' => (bool) $profile?->offers_video,
+                'offers_video' => $profile?->offers_video && filled($profile->video_link),
                 'fee' => $fee > 0 ? Money::format($fee) : null,
                 'photo' => $profile?->photo_path ? route('brand.doctor', [$organization->slug, (int) $doctor->user_id]) : null,
             ];

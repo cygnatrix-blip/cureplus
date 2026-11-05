@@ -29,10 +29,10 @@
                 <fieldset class="space-y-3 border-t border-slate-100 pt-3">
                     <legend class="text-sm font-semibold text-slate-900">Video calls</legend>
                     <label class="flex items-start gap-2 text-sm text-slate-700">
-                        <input type="checkbox" name="offers_video" value="1" class="mt-1" @checked(old('offers_video', $doctorProfile?->offers_video))>
+                        <input type="checkbox" name="offers_video" value="1" class="mt-1" @checked(old('offers_video', $doctorProfile?->offers_video && filled($doctorProfile?->video_link)))>
                         <span>Let patients book a video call with me, using the same hours and fee as clinic visits</span>
                     </label>
-                    <x-field name="video_link" label="Your Google Meet link (recommended)" type="url" placeholder="https://meet.google.com/abc-defg-hij" :value="$doctorProfile?->video_link" hint="Open meet.google.com, choose New meeting, then Create a meeting for later, and paste the link here. Patients ask to join and you let them in one at a time. If you leave this empty, each patient gets a private Jitsi room instead, and you must join first and sign in with Google." />
+                    <x-field name="video_link" label="Your Google Meet link" type="url" placeholder="https://meet.google.com/abc-defg-hij" :value="$doctorProfile?->video_link" hint="Open meet.google.com, choose New meeting, then Create a meeting for later, and paste the link here. Stay signed in to that Google account for calls. Patients ask to join and you let them in one at a time, and only the patient whose turn it is." />
                 </fieldset>
                 <button class="btn btn-secondary">Save doctor details</button>
             </form>

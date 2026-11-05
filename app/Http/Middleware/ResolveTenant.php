@@ -18,9 +18,15 @@ class ResolveTenant
 
     public function __construct(private readonly TenantContext $context) {}
 
-    public function handle(Request $request, Closure $next): Response
+    /**
+     * "tenant:optional" is for pages that work without a practice, such as My account. A
+     * suspended or practice-less user can still change their password there, and everyone
+     * else keeps their menu.
+     */
+    public function handle(Request $request, Closure $next, ?string $mode = null): Response
     {
         $this->context->clear();
+        $isOptional = $mode === 'optional';
 
         // The session only says which organization was picked. Access is re-checked
         // against the database on every request, so a revoked membership ends at once.
@@ -31,13 +37,13 @@ class ResolveTenant
             ->filter(fn (Membership $membership) => $membership->organization !== null);
 
         if ($memberships->isEmpty()) {
-            return redirect()->route('app.no-organization');
+            return $isOptional ? $next($request) : redirect()->route('app.no-organization');
         }
 
         $membership = $memberships->firstWhere('organization_id', $request->session()->get(self::SESSION_ORGANIZATION));
 
         if ($membership === null && $memberships->count() > 1) {
-            return redirect()->route('app.organizations');
+            return $isOptional ? $next($request) : redirect()->route('app.organizations');
         }
 
         $membership ??= $memberships->first();
@@ -45,7 +51,7 @@ class ResolveTenant
         $request->session()->put(self::SESSION_ORGANIZATION, $organization->id);
 
         if ($organization->status === OrganizationStatus::Suspended || $organization->accessHasEnded()) {
-            return redirect()->route('app.organization.status');
+            return $isOptional ? $next($request) : redirect()->route('app.organization.status');
         }
 
         $this->context->set($organization, $membership);

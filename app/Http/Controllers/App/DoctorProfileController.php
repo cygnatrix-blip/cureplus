@@ -26,10 +26,13 @@ class DoctorProfileController extends Controller
         $data = $request->validate([
             'qualification' => ['nullable', 'string', 'max:255'],
             'specialty' => ['nullable', Rule::in(Specialties::allowed($current))],
-            'video_link' => ['nullable', 'regex:'.VideoConsultation::GOOGLE_MEET_PATTERN],
+            'video_link' => ['required_if_accepted:offers_video', 'nullable', 'regex:'.VideoConsultation::GOOGLE_MEET_PATTERN],
             'registration_number' => ['nullable', 'string', 'max:60'],
             'registration_council' => ['nullable', 'string', 'max:120'],
-        ], ['video_link.regex' => 'Please paste a Google Meet link, like https://meet.google.com/abc-defg-hij.']);
+        ], [
+            'video_link.regex' => 'Please paste a Google Meet link, like https://meet.google.com/abc-defg-hij.',
+            'video_link.required_if_accepted' => 'Please paste your Google Meet link to turn on video calls.',
+        ]);
 
         $data['offers_video'] = $request->boolean('offers_video');
 

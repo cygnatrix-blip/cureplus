@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\AppointmentMode;
 use App\Enums\AppointmentStatus;
 use App\Enums\VisitType;
+use App\Exceptions\SlotUnavailableException;
 use App\Jobs\SendMessage;
 use App\Models\Appointment;
 use App\Models\DoctorAvailability;
@@ -33,7 +34,7 @@ class OnlineConsultationTest extends TestCase
     /**
      * @return array{Organization, Location, User, User}
      */
-    private function clinic(bool $offersVideo = true, ?string $meetLink = null): array
+    private function clinic(bool $offersVideo = true, ?string $meetLink = 'https://meet.google.com/abc-defg-hij'): array
     {
         [$organization, $owner, $location] = $this->organizationWithOwner();
         $organization->forceFill(['slug' => 'city-clinic'])->save();
@@ -66,16 +67,7 @@ class OnlineConsultationTest extends TestCase
 
         $appointment = Appointment::withoutTenancy()->firstOrFail();
         $this->assertSame(AppointmentMode::Online, $appointment->mode);
-        $this->assertMatchesRegularExpression('#^https://meet\.jit\.si/CurePlus[A-Za-z0-9]{32}$#', $appointment->video_link);
-    }
-
-    public function test_each_jitsi_appointment_gets_its_own_room(): void
-    {
-        [$organization, $location, $doctor] = $this->clinic();
-        $first = $this->book($this->patient($organization), $doctor, $location);
-        $second = app(AppointmentService::class)->bookSlot($this->patient($organization), $doctor->id, $location->id, $this->monday->addMinutes(15), VisitType::New, mode: AppointmentMode::Online);
-
-        $this->assertNotSame($first->video_link, $second->video_link);
+        $this->assertSame('https://meet.google.com/abc-defg-hij', $appointment->video_link);
     }
 
     public function test_a_doctor_who_has_not_turned_on_video_cannot_be_booked_for_it(): void
@@ -113,11 +105,34 @@ class OnlineConsultationTest extends TestCase
         $this->actingAs($owner, 'web')->post(route('app.appointments.store'), ['patient_id' => $this->patient($organization)->id, 'doctor_user_id' => $doctor->id, 'visit_type' => 'new', 'starts_at' => $this->monday->format('Y-m-d H:i')])->assertSessionHasErrors('starts_at');
     }
 
-    public function test_a_doctors_own_google_meet_link_is_used_instead_of_jitsi(): void
+    public function test_a_doctor_without_a_meet_link_cannot_be_booked_for_video(): void
     {
-        [$organization, $location, $doctor] = $this->clinic(meetLink: 'https://meet.google.com/abc-defg-hij');
+        [$organization, $location, $doctor, $owner] = $this->clinic(meetLink: null);
 
-        $this->assertSame('https://meet.google.com/abc-defg-hij', $this->book($this->patient($organization), $doctor, $location)->video_link);
+        $this->get(route('booking.show', ['city-clinic', 'location' => $location->id, 'doctor' => $doctor->id, 'date' => $this->monday->toDateString()]))->assertOk()->assertDontSee('How would you like to meet?');
+        $this->post(route('book.choose', 'city-clinic'), ['location_id' => $location->id, 'doctor_user_id' => $doctor->id, 'starts_at' => $this->monday->format('Y-m-d H:i'), 'mode' => 'online'])->assertStatus(422);
+        $this->actingAs($owner, 'web')->post(route('app.appointments.store'), ['patient_id' => $this->patient($organization)->id, 'doctor_user_id' => $doctor->id, 'visit_type' => 'new', 'starts_at' => $this->monday->format('Y-m-d H:i'), 'mode' => 'online', 'video_consent' => '1'])->assertSessionHasErrors('mode');
+    }
+
+    public function test_turning_on_video_needs_a_meet_link_but_other_details_still_save_without_one(): void
+    {
+        [, , $doctor] = $this->clinic(meetLink: null);
+        $this->actingAs($doctor, 'web');
+
+        $this->post(route('app.doctor-profile.update'), ['offers_video' => '1', 'video_link' => ''])->assertSessionHasErrors(['video_link' => 'Please paste your Google Meet link to turn on video calls.']);
+        $this->post(route('app.doctor-profile.update'), ['qualification' => 'MBBS'])->assertSessionHasNoErrors();
+
+        $this->assertSame('MBBS', DoctorProfile::query()->where('user_id', $doctor->id)->value('qualification'));
+    }
+
+    public function test_a_link_removed_after_the_patient_chose_video_stops_the_booking(): void
+    {
+        [$organization, $location, $doctor] = $this->clinic();
+        DoctorProfile::query()->where('user_id', $doctor->id)->update(['video_link' => null]);
+
+        $this->expectException(SlotUnavailableException::class);
+
+        $this->book($this->patient($organization), $doctor, $location);
     }
 
     public function test_a_doctor_turns_on_video_and_saves_a_clean_meet_link(): void
@@ -223,7 +238,7 @@ class OnlineConsultationTest extends TestCase
     {
         [$organization, $location, $doctor, $owner] = $this->clinic();
         $patient = $this->patient($organization);
-        Appointment::factory()->create(['organization_id' => $organization->id, 'location_id' => $location->id, 'patient_id' => $patient->id, 'doctor_user_id' => $doctor->id, 'status' => AppointmentStatus::Booked, 'scheduled_on' => today(), 'mode' => AppointmentMode::Online, 'video_link' => 'https://meet.jit.si/CurePlusRoom']);
+        Appointment::factory()->create(['organization_id' => $organization->id, 'location_id' => $location->id, 'patient_id' => $patient->id, 'doctor_user_id' => $doctor->id, 'status' => AppointmentStatus::Booked, 'scheduled_on' => today(), 'mode' => AppointmentMode::Online, 'video_link' => 'https://meet.google.com/abc-defg-hij']);
 
         $this->actingAs($owner, 'web')->get(route('app.queue.index', ['fragment' => 1]))->assertOk()->assertSee($patient->name)->assertDontSee('Check in');
     }

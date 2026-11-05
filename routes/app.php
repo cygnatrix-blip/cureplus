@@ -64,7 +64,7 @@ Route::prefix('app')->name('app.')->middleware(['auth:web', 'account.active', 'n
             Route::get('/organizations', [SwitcherController::class, 'index'])->name('organizations');
             Route::post('/organizations/{uuid}/switch', [SwitcherController::class, 'switchOrganization'])->name('organizations.switch');
 
-            Route::get('/account', [AccountController::class, 'show'])->name('account');
+            Route::get('/account', [AccountController::class, 'show'])->middleware('tenant:optional')->name('account');
             Route::post('/push/subscribe', [PushController::class, 'subscribe'])->middleware('throttle:30,1')->name('push.subscribe');
             Route::post('/push/unsubscribe', [PushController::class, 'unsubscribe'])->middleware('throttle:30,1')->name('push.unsubscribe');
             Route::post('/account/notifications', [PushController::class, 'savePreferences'])->name('notifications.save');

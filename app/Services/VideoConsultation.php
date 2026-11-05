@@ -2,13 +2,12 @@
 
 namespace App\Services;
 
+use App\Exceptions\SlotUnavailableException;
 use App\Models\DoctorProfile;
-use Illuminate\Support\Str;
 
 /**
- * Where a video appointment takes place: the doctor's own Google Meet link if they saved one,
- * otherwise a private Jitsi room. Both are free and open in their own tab or app, because
- * Jitsi's free server does not allow being embedded in another site.
+ * Video calls take place on the doctor's own Google Meet link, which opens in its own tab or
+ * app. A doctor can only be booked for video once they have turned it on and saved a link.
  */
 class VideoConsultation
 {
@@ -16,17 +15,16 @@ class VideoConsultation
 
     public function offeredBy(int $doctorId): bool
     {
-        return (bool) DoctorProfile::query()->where('user_id', $doctorId)->value('offers_video');
+        return DoctorProfile::query()->where('user_id', $doctorId)->where('offers_video', true)->whereNotNull('video_link')->exists();
     }
 
     /**
-     * The random name is what keeps a Jitsi room private, as anyone with the link can enter.
+     * @throws SlotUnavailableException if the doctor removed their link after the patient chose video
      */
     public function linkFor(int $doctorId): string
     {
-        $ownLink = DoctorProfile::query()->where('user_id', $doctorId)->value('video_link');
-
-        return $ownLink ?: rtrim((string) config('cureplus.video.jitsi_url'), '/').'/CurePlus'.Str::random(32);
+        return DoctorProfile::query()->where('user_id', $doctorId)->where('offers_video', true)->value('video_link')
+            ?? throw new SlotUnavailableException;
     }
 
     /**

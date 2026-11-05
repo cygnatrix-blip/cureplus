@@ -53,7 +53,7 @@ class VideoPaymentAndAlliedTest extends TestCase
     {
         [$organization, , $location] = $this->organizationWithOwner();
         $doctor = $this->addMember($organization, ['doctor'], location: $location);
-        DoctorProfile::query()->create(['user_id' => $doctor->id]);
+        DoctorProfile::query()->create(['user_id' => $doctor->id, 'video_link' => 'https://meet.google.com/abc-defg-hij']);
         DoctorAvailability::withoutTenancy()->create(['organization_id' => $organization->id, 'location_id' => $location->id, 'doctor_user_id' => $doctor->id, 'weekday' => $this->monday->dayOfWeek, 'start_time' => '10:00', 'end_time' => '12:00', 'slot_minutes' => 15]);
         DoctorFee::withoutTenancy()->create(['organization_id' => $organization->id, 'doctor_user_id' => $doctor->id, 'visit_type' => 'new', 'amount_paise' => $feePaise]);
 
@@ -247,11 +247,10 @@ class VideoPaymentAndAlliedTest extends TestCase
         Queue::assertPushed(SendMessage::class, fn (SendMessage $job) => $job->event === 'appointment_cancelled');
     }
 
-    public function test_video_is_on_by_default_and_visible_on_the_clinic_website(): void
+    public function test_a_doctor_with_a_meet_link_is_offered_on_the_clinic_website(): void
     {
         [$organization, $location, $doctor] = $this->clinic();
 
-        $this->assertTrue(DoctorProfile::query()->where('user_id', $doctor->id)->firstOrFail()->refresh()->offers_video);
         $this->get(route('clinic.home', $organization->slug))->assertOk()->assertSee('Book a video call')->assertSee('Video calls available');
         $this->get(route('booking.show', [$organization->slug, 'mode' => 'online', 'location' => $location->id, 'doctor' => $doctor->id, 'date' => $this->monday->toDateString()]))->assertOk()->assertSee('How would you like to meet?')->assertSee('value="online" form="slot-form" checked', false);
     }
@@ -260,7 +259,7 @@ class VideoPaymentAndAlliedTest extends TestCase
     {
         [$organization, $location, $doctor] = $this->clinic();
         $other = $this->addMember($organization, ['doctor'], User::factory()->create(['name' => 'Dr Video']), $location);
-        DoctorProfile::query()->create(['user_id' => $other->id]);
+        DoctorProfile::query()->create(['user_id' => $other->id, 'video_link' => 'https://meet.google.com/xyz-abcd-efg']);
         DoctorProfile::query()->where('user_id', $doctor->id)->update(['offers_video' => false]);
         $doctor->forceFill(['name' => 'Dr Clinic Only'])->save();
 
