@@ -9,12 +9,14 @@ use App\Exceptions\BillingException;
 use App\Exceptions\SlotUnavailableException;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
+use App\Models\AppointmentMessage;
 use App\Models\Consent;
 use App\Models\DataRequest;
 use App\Models\Invoice;
 use App\Models\Organization;
 use App\Models\PatientAccount;
 use App\Models\Payment;
+use App\Services\AppointmentChat;
 use App\Services\AppointmentService;
 use App\Services\AuditLogger;
 use App\Services\Billing\BillingService;
@@ -81,6 +83,7 @@ class PortalController extends Controller
                 : [],
             'canPay' => $gateways->forOrganization((int) $appointment->organization_id) !== null && $appointment->status->holdsSlot(),
             'upi' => $this->upiPanel($appointment, $upi, $fees, $qr),
+            'unreadMessages' => app(AppointmentChat::class)->unreadFor($appointment, AppointmentMessage::FROM_PATIENT),
         ]);
     }
 

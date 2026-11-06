@@ -40,7 +40,7 @@ class Notifier
      *
      * @param  array<string, string|int>  $variables
      */
-    public function notifyPatient(Patient $patient, string $event, array $variables, ?string $dedupeKey = null): void
+    public function notifyPatient(Patient $patient, string $event, array $variables, ?string $dedupeKey = null, ?string $url = null): void
     {
         $account = $patient->patient_account_id ? PatientAccount::query()->find($patient->patient_account_id) : null;
 
@@ -50,7 +50,8 @@ class Notifier
 
         $variables += ['name' => $patient->name];
         $organizationId = (int) $patient->organization_id;
-        $channel = $this->paidChannel($organizationId);
+        // Frequent events, such as chat replies, would cost the practice a paid message each time.
+        $channel = config("messages.events.{$event}.free_only") ? null : $this->paidChannel($organizationId);
 
         if ($channel === null) {
             // Nothing paid is set up yet, so email and push carry the message.
@@ -69,7 +70,7 @@ class Notifier
         }
 
         if ($account) {
-            $this->pushTo($account, $organizationId, $event, $variables, route('patient.home'), $dedupeKey);
+            $this->pushTo($account, $organizationId, $event, $variables, $url ?? route('patient.home'), $dedupeKey);
         }
     }
 

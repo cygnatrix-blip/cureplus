@@ -481,6 +481,46 @@ if (document.querySelector('[data-queue-board]')) {
     setInterval(refreshQueueBoard, 20000);
 }
 
+// A chat thread refreshes every few seconds while it is on screen, and keeps the newest
+// message in view unless the reader has scrolled up to read older ones.
+const chatThread = document.querySelector('[data-chat-thread]');
+
+if (chatThread) {
+    let lastHtml = null;
+    const nearBottom = () => chatThread.scrollHeight - chatThread.scrollTop - chatThread.clientHeight < 80;
+
+    const refreshChat = async () => {
+        if (document.hidden) {
+            return;
+        }
+
+        const response = await fetch(chatThread.dataset.chatThread, { headers: { Accept: 'text/html' } }).catch(() => null);
+
+        if (!response?.ok) {
+            return;
+        }
+
+        const html = await response.text();
+
+        if (html !== lastHtml) {
+            const stick = nearBottom();
+            lastHtml = html;
+            chatThread.innerHTML = html;
+
+            if (stick) {
+                chatThread.scrollTop = chatThread.scrollHeight;
+            }
+        }
+    };
+
+    chatThread.scrollTop = chatThread.scrollHeight;
+    setInterval(refreshChat, 10000);
+    document.addEventListener('visibilitychange', refreshChat);
+    document.querySelector('[data-chat-form]')?.addEventListener('submit', (event) => {
+        event.target.querySelector('button').disabled = true;
+    });
+}
+
 // Queue actions respond at once and reconcile with the server in the background.
 document.addEventListener('submit', async (event) => {
     if (event.target.dataset?.optimistic === undefined) {

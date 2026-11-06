@@ -41,6 +41,22 @@ class QueueTest extends TestCase
         $this->assertSame(AppointmentStatus::CheckedIn, Appointment::withoutTenancy()->find($appointment->id)->status);
     }
 
+    public function test_unfinished_appointments_from_earlier_days_stay_on_the_board_until_closed(): void
+    {
+        [$owner, , $appointment] = $this->queued(AppointmentStatus::InConsultation);
+        $appointment->forceFill(['scheduled_on' => today()->subDays(2)])->saveQuietly();
+        $this->actingAs($owner, 'web');
+
+        $this->get(route('app.queue.index'))->assertOk()
+            ->assertSee('Not finished from earlier days')
+            ->assertSee('Private Patient Name')
+            ->assertSee(today()->subDays(2)->format('d M'));
+
+        $appointment->forceFill(['status' => AppointmentStatus::Completed])->saveQuietly();
+
+        $this->get(route('app.queue.index'))->assertOk()->assertDontSee('Not finished from earlier days')->assertSee('The queue is empty');
+    }
+
     public function test_impossible_moves_are_refused(): void
     {
         [$owner, , $appointment] = $this->queued(AppointmentStatus::Completed);

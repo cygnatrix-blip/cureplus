@@ -8,6 +8,7 @@ use App\Models\OtpCode;
 use App\Models\RestoreTest;
 use App\Models\SecurityEvent;
 use App\Models\SystemHeartbeat;
+use App\Services\AppointmentChat;
 use App\Services\Backups\BackupService;
 use App\Services\Billing\SubscriptionService;
 use App\Services\Domains\DomainService;
@@ -34,6 +35,10 @@ Schedule::call(fn () => SystemHeartbeat::beat('scheduler'))
 Schedule::call(fn () => app(VideoPayments::class)->releaseUnpaid())
     ->name('release-unpaid-video-calls')
     ->everyFiveMinutes();
+
+Schedule::call(fn () => app(AppointmentChat::class)->closeStale())
+    ->name('close-stale-chats')
+    ->dailyAt('02:15');
 
 Schedule::call(function (): void {
     OtpCode::query()->where('expires_at', '<', now()->subDay())->delete();

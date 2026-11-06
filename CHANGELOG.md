@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Appointment chat, and unfinished appointments stay on the queue
+
+- Every appointment has a chat between the patient and their doctor, for questions and reports (PDF, JPG or PNG up to 10 MB). Only the appointment's own doctor can read it at the practice. Messages are encrypted at rest.
+- The doctor closes the chat when it is no longer needed, and can reopen it. Chats of finished appointments close by themselves 30 days after the appointment. A closed chat stays readable.
+- New messages show on the doctor's dashboard, the queue and a new Patient chats page. Patients get an email and push alert without the message text, at most once per 10 minutes.
+- The queue now shows a "Not finished from earlier days" section, so appointments left booked, waiting or in consultation are no longer lost overnight.
+- Web push now uses the standard aes128gcm encryption.
+
 ### UPI payments without a gateway, and GST only with a GSTIN
 
 - Practices without Razorpay or Cashfree can take UPI payments directly into their own UPI ID, personal or business. For video calls and clinic visits separately, they choose whether patients who book online may pay or must pay.

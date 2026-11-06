@@ -5,6 +5,7 @@ namespace App\Http\Controllers\App;
 use App\Enums\AppointmentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
+use App\Models\AppointmentMessage;
 use App\Models\FollowUp;
 use App\Models\Location;
 use App\Models\Membership;
@@ -46,6 +47,9 @@ class DashboardController extends Controller
             'followUpsDue' => Gate::check('appointments.manage') ? FollowUp::query()->where('status', 'pending')->where('due_on', '<=', today()->endOfDay())->count() : null,
             'missedFollowUps' => Gate::check('appointments.manage') ? FollowUp::query()->where('status', 'missed')->count() : null,
             'collections' => Gate::check('billing.view') ? $reports->dailyCash(CarbonImmutable::today(), $locationId)['net'] : null,
+            'unreadChats' => Gate::check('consultations.manage')
+                ? AppointmentMessage::query()->where('sender_type', AppointmentMessage::FROM_PATIENT)->whereNull('read_at')->whereHas('appointment', fn ($query) => $query->where('doctor_user_id', $request->user()->id))->count()
+                : 0,
             'upiToCheck' => Gate::check('billing.manage') ? Payment::query()->where('status', Payment::UNVERIFIED)->count() : 0,
             'locationCount' => Location::query()->active()->count(),
             'staffCount' => Membership::query()->active()->count(),

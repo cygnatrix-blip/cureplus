@@ -9,6 +9,7 @@
             ['Patients', 'app.patients.index', 'patients.view'],
             ['Appointments', 'app.appointments.index', 'appointments.view'],
             ['Queue', 'app.queue.index', 'appointments.view'],
+            ['Patient chats', 'app.chats.index', 'consultations.manage'],
             ['Follow-ups', 'app.follow-ups.index', 'appointments.manage'],
             ['Doctor calendar', 'app.calendar.index', 'appointments.manage'],
             ['Prescriptions', 'app.prescriptions.index', 'prescriptions.view'],

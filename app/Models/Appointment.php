@@ -11,6 +11,7 @@ use Database\Factories\AppointmentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -23,6 +24,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $starts_at
  * @property Carbon|null $ends_at
  * @property Carbon|null $pay_by
+ * @property Carbon|null $chat_closed_at
  */
 class Appointment extends Model
 {
@@ -32,7 +34,7 @@ class Appointment extends Model
     protected $fillable = [
         'organization_id', 'location_id', 'patient_id', 'doctor_user_id', 'kind', 'mode', 'video_link', 'pay_by', 'source', 'visit_type',
         'scheduled_on', 'starts_at', 'ends_at', 'slot_key', 'token_number', 'status', 'cancel_reason',
-        'cancelled_at', 'checked_in_at', 'called_at', 'completed_at',
+        'cancelled_at', 'checked_in_at', 'called_at', 'completed_at', 'chat_closed_at', 'chat_closed_by',
     ];
 
     protected function casts(): array
@@ -49,7 +51,24 @@ class Appointment extends Model
             'checked_in_at' => 'datetime',
             'called_at' => 'datetime',
             'completed_at' => 'datetime',
+            'chat_closed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * @return HasMany<AppointmentMessage, $this>
+     */
+    public function messages(): HasMany
+    {
+        return $this->hasMany(AppointmentMessage::class);
+    }
+
+    /**
+     * The chat stays open until the doctor closes it, or 30 days after a finished appointment.
+     */
+    public function isChatOpen(): bool
+    {
+        return $this->chat_closed_at === null;
     }
 
     /**

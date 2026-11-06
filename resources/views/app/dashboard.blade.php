@@ -4,6 +4,12 @@
         @can('appointments.manage')<a class="btn btn-primary" href="{{ route('app.appointments.create') }}">Book</a>@endcan
     </x-page-header>
     @include('partials.setup-checklist')
+    @if ($unreadChats > 0)
+        <a class="mb-4 flex items-center justify-between gap-3 rounded-xl border border-brand-200 bg-brand-50 p-4 text-sm text-brand-900" href="{{ route('app.chats.index') }}">
+            <span><strong>{{ $unreadChats }} unread {{ \Illuminate\Support\Str::plural('message', $unreadChats) }}</strong> from your patients.</span>
+            <span class="font-medium underline">Open chats</span>
+        </a>
+    @endif
     @if ($upiToCheck > 0)
         <a class="mb-4 flex items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950" href="{{ route('app.invoices.index', ['status' => 'upi_to_check']) }}">
             <span><strong>{{ $upiToCheck }} UPI {{ \Illuminate\Support\Str::plural('payment', $upiToCheck) }}</strong> from patients to check against your bank app.</span>

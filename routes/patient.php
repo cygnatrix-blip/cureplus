@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Patient\AuthController;
+use App\Http\Controllers\Patient\ChatController;
 use App\Http\Controllers\Patient\NotificationController;
 use App\Http\Controllers\Patient\PortalController;
 use App\Http\Controllers\PushController;
@@ -25,6 +26,10 @@ Route::prefix('patient')->name('patient.')->middleware(SetLocale::class)->group(
         Route::post('/appointments/{id}/cancel', [PortalController::class, 'cancel'])->whereNumber('id')->name('appointments.cancel');
         Route::post('/appointments/{id}/reschedule', [PortalController::class, 'reschedule'])->whereNumber('id')->name('appointments.reschedule');
         Route::post('/appointments/{id}/pay', [PortalController::class, 'payAppointment'])->whereNumber('id')->name('appointments.pay');
+        Route::get('/appointments/{id}/chat', [ChatController::class, 'show'])->whereNumber('id')->name('appointments.chat');
+        Route::get('/appointments/{id}/chat/messages', [ChatController::class, 'messages'])->whereNumber('id')->name('appointments.chat.messages');
+        Route::post('/appointments/{id}/chat', [ChatController::class, 'store'])->whereNumber('id')->middleware('throttle:30,1')->name('appointments.chat.store');
+        Route::get('/appointments/{id}/chat/files/{message}', [ChatController::class, 'file'])->whereNumber(['id', 'message'])->name('appointments.chat.file');
         Route::post('/appointments/{id}/upi', [PortalController::class, 'submitUpi'])->whereNumber('id')->middleware('throttle:10,1')->name('appointments.upi');
         Route::get('/records', [PortalController::class, 'records'])->name('records');
         Route::get('/prescriptions/{id}/pdf', [PortalController::class, 'prescriptionPdf'])->whereNumber('id')->name('prescriptions.pdf');

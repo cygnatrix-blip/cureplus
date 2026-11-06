@@ -5,6 +5,7 @@ namespace App\Http\Controllers\App;
 use App\Enums\AppointmentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
+use App\Models\AppointmentMessage;
 use App\Services\AppointmentService;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
@@ -23,13 +24,18 @@ class QueueController extends Controller
         'no_show' => ['checked_in'],
     ];
 
+    /** The oldest unfinished appointments past this many wait until newer ones are cleared. */
+    private const EARLIER_LIMIT = 100;
+
+    private const ROW_RELATIONS = ['patient:id,name,mobile,patient_code', 'doctor:id,name', 'visit:id,appointment_id'];
+
     public function __construct(private readonly TenantContext $tenant) {}
 
     public function index(Request $request): View
     {
         $view = $request->boolean('fragment') ? 'app.queue.board' : 'app.queue.index';
 
-        return view($view, ['groups' => $this->board(), 'location' => $this->tenant->location()]);
+        return view($view, ['groups' => $this->board(), 'earlier' => $this->unfinishedEarlier(), 'location' => $this->tenant->location()]);
     }
 
     public function move(Request $request, Appointment $appointment, AppointmentService $appointments): RedirectResponse|JsonResponse
@@ -53,9 +59,31 @@ class QueueController extends Controller
             ->where('location_id', $this->tenant->location()?->id)
             ->whereDate('scheduled_on', today())
             ->whereNotIn('status', [AppointmentStatus::Cancelled->value])
-            ->with(['patient:id,name,mobile,patient_code', 'doctor:id,name', 'visit:id,appointment_id'])
+            ->with(self::ROW_RELATIONS)
+            ->withCount(['messages as unread_messages_count' => fn ($query) => $query->where('sender_type', AppointmentMessage::FROM_PATIENT)->whereNull('read_at')])
             ->orderBy('token_number')
             ->get()
             ->groupBy('doctor_user_id');
+    }
+
+    /**
+     * Appointments from past days that never reached an end: never checked in, left waiting,
+     * or a consultation that was never completed. They stay on the board until someone
+     * completes them or marks a no-show, so nothing is silently lost overnight.
+     *
+     * @return Collection<int, Appointment>
+     */
+    private function unfinishedEarlier(): Collection
+    {
+        return Appointment::query()
+            ->where('location_id', $this->tenant->location()?->id)
+            ->whereDate('scheduled_on', '<', today())
+            ->whereIn('status', [AppointmentStatus::Booked->value, AppointmentStatus::CheckedIn->value, AppointmentStatus::InConsultation->value])
+            ->with(self::ROW_RELATIONS)
+            ->withCount(['messages as unread_messages_count' => fn ($query) => $query->where('sender_type', AppointmentMessage::FROM_PATIENT)->whereNull('read_at')])
+            ->orderByDesc('scheduled_on')
+            ->orderBy('token_number')
+            ->limit(self::EARLIER_LIMIT)
+            ->get();
     }
 }

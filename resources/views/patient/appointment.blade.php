@@ -71,6 +71,16 @@
                 @endif
             </section>
         @endif
+        <a class="card flex items-center justify-between gap-3 p-5 hover:bg-slate-50" href="{{ route('patient.appointments.chat', $appointment->id) }}">
+            <span class="flex items-center gap-3">
+                <x-icon name="chat" class="h-6 w-6 text-brand-700" />
+                <span>
+                    <span class="block font-semibold text-slate-900">{{ $appointment->isChatOpen() ? __('Message your doctor') : __('Messages with your doctor') }}</span>
+                    <span class="block text-sm text-slate-600">{{ $appointment->isChatOpen() ? __('Ask a question or share a report.') : __('This chat is closed. You can still read it.') }}</span>
+                </span>
+            </span>
+            @if ($unreadMessages > 0)<span class="badge badge-amber flex-none">{{ trans_choice(':count new|:count new', $unreadMessages, ['count' => $unreadMessages]) }}</span>@endif
+        </a>
         @if ($appointment->canJoinVideo())
             <section class="card space-y-2 p-5">
                 <a class="btn btn-primary w-full" href="{{ $appointment->video_link }}" target="_blank" rel="noopener noreferrer"><x-icon name="video" />{{ __('Join video call') }}</a>

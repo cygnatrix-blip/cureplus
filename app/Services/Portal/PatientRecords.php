@@ -4,6 +4,7 @@ namespace App\Services\Portal;
 
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
+use App\Models\AppointmentMessage;
 use App\Models\Consent;
 use App\Models\Invoice;
 use App\Models\Patient;
@@ -186,6 +187,19 @@ class PatientRecords
                 'total_paise' => $invoice->total_paise,
                 'paid_paise' => $invoice->paid_paise,
             ])->values(),
+            'messages' => AppointmentMessage::withoutTenancy()
+                ->whereIn('appointment_id', Appointment::withoutTenancy()->whereIn('patient_id', $ids)->select('id'))
+                ->with(['appointment' => fn ($query) => $query->withoutTenancy()->select('id', 'patient_id', 'scheduled_on')])
+                ->orderBy('id')
+                ->get()
+                ->map(fn (AppointmentMessage $message) => [
+                    'organization' => $organizationNames[$message->appointment?->patient_id] ?? null,
+                    'appointment_date' => $message->appointment?->scheduled_on->toDateString(),
+                    'from' => $message->sender_type,
+                    'sent_at' => $message->created_at->toIso8601String(),
+                    'text' => $message->body,
+                    'file' => $message->attachment_name,
+                ])->values(),
             'consents' => Consent::query()->where('patient_account_id', $account->id)->with('granteeOrganization:id,name')->get()->map(fn (Consent $consent) => [
                 'purpose' => $consent->purpose,
                 'shared_with' => $consent->granteeOrganization?->name,

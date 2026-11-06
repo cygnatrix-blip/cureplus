@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\App\AccountController;
 use App\Http\Controllers\App\AnnouncementController;
+use App\Http\Controllers\App\AppointmentChatController;
 use App\Http\Controllers\App\AppointmentController;
 use App\Http\Controllers\App\AuditLogController;
 use App\Http\Controllers\App\BillingSettingsController;
@@ -119,6 +120,13 @@ Route::prefix('app')->name('app.')->middleware(['auth:web', 'account.active', 'n
                 Route::get('/appointments/{appointment}/edit', [AppointmentController::class, 'edit'])->can('update', 'appointment')->name('appointments.edit');
                 Route::put('/appointments/{appointment}', [AppointmentController::class, 'update'])->can('update', 'appointment')->name('appointments.update');
                 Route::post('/appointments/{appointment}/cancel', [AppointmentController::class, 'cancel'])->can('update', 'appointment')->name('appointments.cancel');
+                Route::get('/chats', [AppointmentChatController::class, 'index'])->can('consultations.manage')->name('chats.index');
+                Route::get('/appointments/{appointment}/chat', [AppointmentChatController::class, 'show'])->can('chat', 'appointment')->name('appointments.chat');
+                Route::get('/appointments/{appointment}/chat/messages', [AppointmentChatController::class, 'messages'])->can('chat', 'appointment')->name('appointments.chat.messages');
+                Route::post('/appointments/{appointment}/chat', [AppointmentChatController::class, 'store'])->middleware('throttle:30,1')->can('chat', 'appointment')->name('appointments.chat.store');
+                Route::post('/appointments/{appointment}/chat/close', [AppointmentChatController::class, 'close'])->can('chat', 'appointment')->name('appointments.chat.close');
+                Route::post('/appointments/{appointment}/chat/reopen', [AppointmentChatController::class, 'reopen'])->can('chat', 'appointment')->name('appointments.chat.reopen');
+                Route::get('/appointments/{appointment}/chat/files/{message}', [AppointmentChatController::class, 'file'])->can('chat', 'appointment')->name('appointments.chat.file');
 
                 Route::get('/queue', [QueueController::class, 'index'])->can('viewAny', Appointment::class)->name('queue.index');
                 Route::post('/queue/{appointment}/move', [QueueController::class, 'move'])->can('update', 'appointment')->name('queue.move');

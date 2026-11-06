@@ -353,6 +353,10 @@ To render a PDF there, the tenant is set just for that call: `$tenant->run($orga
 
 **DPDP rights:** download my data (JSON), correction and deletion requests, handled in Super Admin, Data requests. A deletion erases the login and profile, and unlinks records; clinics keep medical and billing records. **Have counsel confirm this.**
 
+**Appointment chat** (`AppointmentChat`, `appointment_messages`): every appointment has a chat between the patient and **only the appointment's own doctor** (`AppointmentPolicy::chat`). Owners and front-desk staff cannot read it, because it carries clinical detail. Text is encrypted at rest. Files (PDF, JPG, PNG, up to 10 MB) are stored privately under `chat/{organization}` with a generated name, and are streamed with `nosniff` only after access is checked again. The patient side reaches the chat through `PatientRecords`, so it works with no tenant set. The chat stays open until the doctor closes it (they can reopen it). As a safety net, `closeStale` runs nightly and closes chats of finished appointments 30 days after the appointment date. Closed chats stay readable. The page refreshes the thread every 10 seconds while visible; sending is a plain form post. The alert to the other side never contains the message text, goes by email and push only (`free_only`, so no paid SMS or WhatsApp per message), and is sent at most once per 10 minutes per side. Messages are in the patient's data download.
+
+**Queue:** today's board, plus "Not finished from earlier days": past appointments still booked, waiting or in consultation, until someone completes them or marks a no-show.
+
 **Languages:** patient-facing text uses `__()` with English as the key, so a missing translation shows English. Add a language with a new `lang/xx.json` and an entry in `cureplus.locales`. `MessageWording` lets admins change message text.
 
 ## 11. Messaging

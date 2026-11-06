@@ -48,6 +48,15 @@ return [
             'subject' => 'Your video call was released',
             'push_title' => 'Video call released',
         ],
+        'chat_message' => [
+            'label' => 'Messages from your doctor',
+            'free_only' => true,
+            'whatsapp_template' => null,
+            'params' => ['name', 'doctor', 'clinic'],
+            'text' => 'Hi {name}, {doctor} at {clinic} sent you a message. Sign in to read it.',
+            'subject' => 'New message from {doctor}',
+            'push_title' => 'New message from your doctor',
+        ],
         'appointment_payment_missed' => [
             'label' => 'Unpaid booking released',
             'whatsapp_template' => 'appointment_payment_missed',
@@ -146,6 +155,7 @@ return [
 
     'staff_events' => [
         'announcement' => ['label' => 'Platform announcements', 'push_title' => 'Announcement', 'text' => '{title}: {body}'],
+        'chat_message_staff' => ['label' => 'Messages from patients', 'push_title' => 'New patient message', 'text' => 'A patient sent you a message about their appointment on {time}.'],
     ],
 
     'whatsapp' => [
