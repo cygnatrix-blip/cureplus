@@ -2,6 +2,7 @@
 
 namespace App\Services\Domains;
 
+use App\Http\Middleware\ResolveHost;
 use App\Models\CustomDomain;
 use App\Services\OrganizationOwners;
 use Illuminate\Http\Client\ConnectionException;
@@ -34,8 +35,9 @@ class DomainService
     }
 
     /**
-     * Called after an admin parks the domain in hPanel. It only goes live once HTTPS
-     * really answers, so a patient can never land on a certificate warning.
+     * Called after an admin parks the domain in hPanel. It only goes live once HTTPS really
+     * answers with this app's token, so a patient never lands on a certificate warning or on
+     * someone else's server.
      */
     public function markParked(CustomDomain $domain): bool
     {
@@ -47,7 +49,8 @@ class DomainService
     public function activateIfHttpsWorks(CustomDomain $domain): bool
     {
         try {
-            $works = Http::timeout(10)->withoutRedirecting()->get("https://{$domain->hostname}/up")->successful();
+            $response = Http::timeout(10)->withoutRedirecting()->get("https://{$domain->hostname}/".ResolveHost::PROBE_PATH);
+            $works = $response->successful() && hash_equals(ResolveHost::probeToken($domain->hostname), trim($response->body()));
         } catch (ConnectionException) {
             $works = false;
         }

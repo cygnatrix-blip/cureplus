@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Contracts\DnsResolver;
+use App\Http\Middleware\ResolveHost;
 use App\Mail\ClinicMessageMail;
 use App\Models\CustomDomain;
 use App\Models\Location;
@@ -108,7 +109,7 @@ class CustomDomainTest extends TestCase
 
     public function test_marking_as_parked_goes_live_only_once_https_answers(): void
     {
-        Http::fake(['https://book.drroy.test/up' => Http::sequence()->push('', 500)->push('ok', 200)]);
+        Http::fake(['https://book.drroy.test/.well-known/cureplus-domain' => Http::sequence()->push('', 500)->push(ResolveHost::probeToken('book.drroy.test'), 200)]);
         [$organization] = $this->activeDomain();
         $domain = CustomDomain::withoutTenancy()->firstOrFail();
         $domain->forceFill(['status' => 'awaiting_parking'])->save();
@@ -124,6 +125,42 @@ class CustomDomainTest extends TestCase
         $this->assertNotNull($live->activated_at);
         Mail::assertQueued(ClinicMessageMail::class);
         $this->assertNotNull($organization);
+    }
+
+    public function test_a_domain_that_answers_without_our_token_does_not_go_live(): void
+    {
+        Http::fake(['https://book.drroy.test/.well-known/cureplus-domain' => Http::response('ok', 200)]);
+        $this->activeDomain();
+        $domain = CustomDomain::withoutTenancy()->firstOrFail();
+        $domain->forceFill(['status' => 'parked'])->save();
+
+        $this->assertFalse(app(DomainService::class)->activateIfHttpsWorks($domain));
+        $this->assertSame('parked', $domain->refresh()->status);
+    }
+
+    public function test_a_parked_domain_answers_the_activation_check_before_it_is_live(): void
+    {
+        [, $domain] = $this->activeDomain();
+        $domain->forceFill(['status' => 'parked'])->save();
+
+        $this->get('http://book.drroy.test/.well-known/cureplus-domain')->assertOk()->assertSeeText(ResolveHost::probeToken('book.drroy.test'));
+        $this->get('http://book.drroy.test/')->assertNotFound();
+        $this->get('http://never-heard-of-it.test/.well-known/cureplus-domain')->assertNotFound();
+    }
+
+    public function test_www_goes_to_the_bare_domain_and_keeps_the_path(): void
+    {
+        $this->activeDomain('drroy.test');
+
+        $this->get('http://www.drroy.test/book/roy-clinic?date=2026-12-01')->assertStatus(301)->assertRedirect('https://drroy.test/book/roy-clinic?date=2026-12-01');
+        $this->get('http://www.unknown-clinic.test/')->assertNotFound();
+    }
+
+    public function test_a_host_with_capitals_or_a_trailing_dot_still_matches(): void
+    {
+        $this->activeDomain();
+
+        $this->get('http://BOOK.DrRoy.test./')->assertOk()->assertSee('Roy Clinic');
     }
 
     public function test_a_custom_domain_serves_only_the_booking_site(): void
