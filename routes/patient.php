@@ -25,6 +25,7 @@ Route::prefix('patient')->name('patient.')->middleware(SetLocale::class)->group(
         Route::post('/appointments/{id}/cancel', [PortalController::class, 'cancel'])->whereNumber('id')->name('appointments.cancel');
         Route::post('/appointments/{id}/reschedule', [PortalController::class, 'reschedule'])->whereNumber('id')->name('appointments.reschedule');
         Route::post('/appointments/{id}/pay', [PortalController::class, 'payAppointment'])->whereNumber('id')->name('appointments.pay');
+        Route::post('/appointments/{id}/upi', [PortalController::class, 'submitUpi'])->whereNumber('id')->middleware('throttle:10,1')->name('appointments.upi');
         Route::get('/records', [PortalController::class, 'records'])->name('records');
         Route::get('/prescriptions/{id}/pdf', [PortalController::class, 'prescriptionPdf'])->whereNumber('id')->name('prescriptions.pdf');
         Route::get('/invoices/{id}/pdf', [PortalController::class, 'invoicePdf'])->whereNumber('id')->name('invoices.pdf');

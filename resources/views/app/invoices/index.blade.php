@@ -6,7 +6,7 @@
             <input class="input w-auto" type="date" name="date" value="{{ $date }}" data-auto-submit aria-label="Date">
             <select class="input w-auto" name="status" data-auto-submit aria-label="Status">
                 <option value="">All statuses</option>
-                @foreach (['unpaid' => 'Unpaid', 'partial' => 'Part paid', 'paid' => 'Paid', 'refunded' => 'Refunded', 'cancelled' => 'Cancelled'] as $value => $label)
+                @foreach (['unpaid' => 'Unpaid', 'partial' => 'Part paid', 'paid' => 'Paid', 'refunded' => 'Refunded', 'cancelled' => 'Cancelled', 'upi_to_check' => 'UPI to check'] as $value => $label)
                     <option value="{{ $value }}" @selected($status === $value)>{{ $label }}</option>
                 @endforeach
             </select>

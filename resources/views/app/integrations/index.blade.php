@@ -61,6 +61,34 @@
         </form>
         <form method="POST" action="{{ route('app.integrations.cashfree.test') }}">@csrf<button class="btn btn-secondary">Test Cashfree connection</button></form>
 
+        <form method="POST" action="{{ route('app.integrations.upi') }}" class="card card-body space-y-3">
+            @csrf
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <h2 class="font-semibold text-slate-900">UPI, without a payment gateway</h2>
+                <span @class(['badge', 'badge-green' => $upi?->is_enabled && ! $hasGateway, 'badge-slate' => ! $upi?->is_enabled || $hasGateway])>{{ ! $upi?->is_enabled ? 'Off' : ($hasGateway ? 'Not in use' : 'On') }}</span>
+            </div>
+            <p class="text-sm text-slate-600">Patients who book online pay your UPI ID directly, with a QR code that has the amount filled in, then send you the 12-digit transaction ID. Nobody can check that number automatically, so <strong>you confirm each payment against your bank or UPI app</strong> from the bill, and only then does it count as paid.</p>
+            @if ($hasGateway)
+                <p class="rounded-lg bg-slate-50 p-3 text-sm text-slate-700">Razorpay or Cashfree is on, so patients pay through it and this is not used.</p>
+            @endif
+            <div class="grid gap-3 sm:grid-cols-2">
+                <x-field name="vpa" label="UPI ID" autocomplete="off" placeholder="name@bank" :value="$upi?->config['vpa'] ?? null" />
+                <x-field name="payee_name" label="Name patients see" :value="$upi?->config['payee_name'] ?? null" />
+                @foreach (['online' => 'Video calls', 'in_person' => 'Clinic visits'] as $mode => $label)
+                    <div>
+                        <label class="label" for="upi_{{ $mode }}">{{ $label }}</label>
+                        <select class="input" id="upi_{{ $mode }}" name="{{ $mode }}">
+                            @foreach (\App\Services\Payments\UpiPayments::RULES as $value => $ruleLabel)<option value="{{ $value }}" @selected(old($mode, $upi?->config[$mode] ?? 'off') === $value)>{{ $ruleLabel }}</option>@endforeach
+                        </select>
+                    </div>
+                @endforeach
+            </div>
+            <p class="text-xs text-slate-500">"Must pay to confirm" holds the time for {{ config('cureplus.video.pay_within_minutes') }} minutes. A patient who sends a transaction ID in that time keeps it until you check. For a video call, the link is sent once you confirm the payment.</p>
+            <p class="text-xs text-slate-500">A personal or a business UPI ID both work. Banks may limit how many payments a personal UPI ID can receive in a day; a business UPI ID from your bank or a UPI business app avoids that.</p>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_enabled" value="1" @checked($upi?->is_enabled)> Accept UPI payments from patients</label>
+            <button class="btn btn-primary">Save UPI</button>
+        </form>
+
         <form method="POST" action="{{ route('app.integrations.smtp') }}" class="card card-body space-y-3">
             @csrf
             <div class="flex flex-wrap items-center justify-between gap-2">

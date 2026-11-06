@@ -16,6 +16,20 @@
         </article>
         <aside class="space-y-4 print:hidden">
             @can('update', $invoice)
+                @foreach ($invoice->payments->where('status', \App\Models\Payment::UNVERIFIED) as $claim)
+                    <section class="card card-body space-y-3 border-amber-300 bg-amber-50" role="status">
+                        <h3 class="font-semibold text-amber-950">UPI payment to check</h3>
+                        <p class="text-sm text-amber-900">The patient says they paid <strong>{{ $money::format($claim->amount_paise) }}</strong> by UPI on {{ $claim->created_at->format('d M, h:i A') }}. Find it in your bank or UPI app before confirming.</p>
+                        <dl class="text-sm">
+                            <div class="flex justify-between gap-2"><dt class="text-amber-900">Transaction ID (UTR)</dt><dd class="font-mono font-semibold">{{ $claim->reference }}</dd></div>
+                            @if ($invoice->appointment_id)<div class="flex justify-between gap-2"><dt class="text-amber-900">Payment note</dt><dd class="font-mono">Appointment {{ $invoice->appointment_id }}</dd></div>@endif
+                        </dl>
+                        <div class="flex flex-wrap gap-2">
+                            <form method="POST" action="{{ route('app.invoices.upi.confirm', [$invoice, $claim]) }}">@csrf<button class="btn btn-primary">Received</button></form>
+                            <form method="POST" action="{{ route('app.invoices.upi.reject', [$invoice, $claim]) }}" data-confirm="Mark this payment as not received? The patient will be asked to check it.">@csrf<button class="btn btn-secondary">Not received</button></form>
+                        </div>
+                    </section>
+                @endforeach
                 @if ($invoice->duePaise() > 0)
                     <form method="POST" action="{{ route('app.invoices.pay', $invoice) }}" class="card card-body space-y-3">
                         @csrf
@@ -34,7 +48,7 @@
                 <div class="card-header"><h3 class="card-title">Payments</h3></div>
                 @forelse ($invoice->payments as $payment)
                     <div class="border-b border-slate-100 px-4 py-3 text-sm last:border-b-0">
-                        <div class="flex justify-between gap-2"><span>{{ \App\Models\Payment::MODES[$payment->mode] ?? $payment->mode }} · {{ ucfirst($payment->status) }}</span><span class="font-medium">{{ $money::format($payment->amount_paise) }}</span></div>
+                        <div class="flex justify-between gap-2"><span>{{ \App\Models\Payment::MODES[$payment->mode] ?? $payment->mode }} · {{ $payment->statusLabel() }}</span><span class="font-medium">{{ $money::format($payment->amount_paise) }}</span></div>
                         <p class="text-xs text-slate-500">{{ $payment->paid_at?->format('d M Y H:i') }} {{ $payment->reference }}</p>
                         @if ($payment->status === 'pending' && $payment->gateway_link_url)
                             <div class="mt-1"><x-send-to-patient :patient="$invoice->patient" event="payment_link" :link="$payment->gateway_link_url" :variables="['name' => $invoice->patient->name, 'amount' => $money::format($payment->amount_paise), 'clinic' => $organization->name, 'link' => $payment->gateway_link_url]" /></div>

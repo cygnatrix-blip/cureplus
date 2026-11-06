@@ -119,13 +119,17 @@ class InvoiceController extends Controller
             throw ValidationException::withMessages(['doctor_user_id' => 'Choose a doctor from your organization.']);
         }
 
-        $invoice = $this->billing->createInvoice($this->tenant->organization(), Patient::query()->findOrFail($data['patient_id']), $this->lines($data['items_json']), [
-            'location_id' => (int) $this->tenant->location()?->id,
-            'doctor_user_id' => $data['doctor_user_id'] ?? null,
-            'appointment_id' => $data['appointment_id'] ?? null,
-            'discount_paise' => $discount,
-            'discount_reason' => $data['discount_reason'] ?? null,
-        ]);
+        try {
+            $invoice = $this->billing->createInvoice($this->tenant->organization(), Patient::query()->findOrFail($data['patient_id']), $this->lines($data['items_json']), [
+                'location_id' => (int) $this->tenant->location()?->id,
+                'doctor_user_id' => $data['doctor_user_id'] ?? null,
+                'appointment_id' => $data['appointment_id'] ?? null,
+                'discount_paise' => $discount,
+                'discount_reason' => $data['discount_reason'] ?? null,
+            ]);
+        } catch (BillingException $exception) {
+            return back()->withInput()->with('error', $exception->getMessage());
+        }
 
         $payAmount = Money::toPaise($data['pay_amount'] ?? null);
 
@@ -232,6 +236,25 @@ class InvoiceController extends Controller
         return $this->attempt(fn () => $this->billing->refund($payment, Money::toPaise($data['amount']), $data['reason']), 'Refund recorded.');
     }
 
+    /**
+     * Staff found the patient's UPI payment in their bank app.
+     */
+    public function confirmUpi(Invoice $invoice, Payment $payment): RedirectResponse
+    {
+        abort_unless((int) $payment->invoice_id === $invoice->id && $payment->mode === 'upi', 404);
+
+        return $this->attempt(fn () => $this->billing->confirmUpiPayment($payment), 'UPI payment confirmed.');
+    }
+
+    public function rejectUpi(Invoice $invoice, Payment $payment): RedirectResponse
+    {
+        abort_unless((int) $payment->invoice_id === $invoice->id && $payment->mode === 'upi', 404);
+
+        $this->billing->rejectUpiPayment($payment);
+
+        return back()->with('success', 'Marked as not received. The patient is told, and can send the transaction ID again.');
+    }
+
     public function cancel(Request $request, Invoice $invoice): RedirectResponse
     {
         $data = $request->validate(['reason' => ['required', 'string', 'max:255']]);
@@ -316,6 +339,7 @@ class InvoiceController extends Controller
                 ->where('number', 'like', "%{$search}%")
                 ->orWhereHas('patient', fn ($query) => $query->search($search))))
             ->when(in_array($status, ['unpaid', 'partial', 'paid', 'cancelled', 'refunded'], true), fn ($query) => $query->where('status', $status))
+            ->when($status === 'upi_to_check', fn ($query) => $query->whereHas('payments', fn ($query) => $query->where('status', Payment::UNVERIFIED)))
             ->when(is_string($date) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) === 1, fn ($query) => $query->whereDate('issued_at', $date))
             ->latest('id');
     }

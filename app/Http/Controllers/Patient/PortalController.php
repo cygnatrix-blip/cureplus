@@ -14,6 +14,7 @@ use App\Models\DataRequest;
 use App\Models\Invoice;
 use App\Models\Organization;
 use App\Models\PatientAccount;
+use App\Models\Payment;
 use App\Services\AppointmentService;
 use App\Services\AuditLogger;
 use App\Services\Billing\BillingService;
@@ -21,9 +22,11 @@ use App\Services\Billing\FeeResolver;
 use App\Services\Billing\InvoicePdf;
 use App\Services\DoctorCalendar;
 use App\Services\Payments\GatewayFactory;
+use App\Services\Payments\UpiPayments;
 use App\Services\Portal\PatientRecords;
 use App\Services\Portal\PortalBrand;
 use App\Services\PrescriptionPdf;
+use App\Services\QrCodeService;
 use App\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\RequestException;
@@ -64,7 +67,7 @@ class PortalController extends Controller
         return view('patient.appointments', ['appointments' => $this->records->appointments($this->account($request))]);
     }
 
-    public function appointment(Request $request, int $id, GatewayFactory $gateways): View
+    public function appointment(Request $request, int $id, GatewayFactory $gateways, UpiPayments $upi, FeeResolver $fees, QrCodeService $qr): View
     {
         $appointment = $this->records->appointment($this->account($request), $id);
         $date = $this->date($request->query('date'), $appointment->scheduled_on->toImmutable());
@@ -77,7 +80,32 @@ class PortalController extends Controller
                 ? app(DoctorCalendar::class)->slots((int) $appointment->doctor_user_id, (int) $appointment->organization_id, (int) $appointment->location_id, $date)
                 : [],
             'canPay' => $gateways->forOrganization((int) $appointment->organization_id) !== null && $appointment->status->holdsSlot(),
+            'upi' => $this->upiPanel($appointment, $upi, $fees, $qr),
         ]);
+    }
+
+    /**
+     * The patient has paid by UPI and sends the transaction ID for the clinic to check.
+     */
+    public function submitUpi(Request $request, int $id, UpiPayments $upi, BillingService $billing, FeeResolver $fees): RedirectResponse
+    {
+        $appointment = $this->records->appointment($this->account($request), $id);
+        abort_unless($this->upiOffered($appointment, $upi), 404);
+
+        $request->validate(['utr' => ['required', 'string', 'max:30']]);
+        $utr = UpiPayments::normalizeUtr((string) $request->input('utr'));
+
+        if ($utr === null) {
+            throw ValidationException::withMessages(['utr' => __('The UPI transaction ID is the 12-digit number in your UPI app, also called UTR or reference number.')]);
+        }
+
+        try {
+            $billing->submitUpiPayment($this->appointmentInvoice($appointment, $billing, $fees), $utr);
+        } catch (BillingException $exception) {
+            throw ValidationException::withMessages(['utr' => __($exception->getMessage())]);
+        }
+
+        return back()->with('success', __('Thank you. The clinic will check your payment and confirm it.'));
     }
 
     public function cancel(Request $request, int $id, AppointmentService $appointments): RedirectResponse
@@ -120,16 +148,75 @@ class PortalController extends Controller
         // A cancelled appointment has nothing left to pay for, so no money is taken for it.
         abort_unless($appointment->status->holdsSlot(), 422);
 
-        $invoice = Invoice::withoutTenancy()->where('appointment_id', $appointment->id)->where('status', '!=', 'cancelled')->first();
+        return $this->startPayment($this->appointmentInvoice($appointment, $billing, $fees), $billing, $gateway);
+    }
 
-        if ($invoice === null) {
-            $fee = $fees->resolve($organization, (int) $appointment->doctor_user_id, $appointment->visit_type ?? VisitType::New, (int) $appointment->patient_id);
-            $invoice = $billing->createInvoice($organization, $appointment->patient, [
-                ['description' => 'Consultation', 'quantity' => 1, 'unit_paise' => $fee['amount_paise'], 'is_taxable' => false, 'gst_rate_bp' => 0],
-            ], ['location_id' => (int) $appointment->location_id, 'doctor_user_id' => (int) $appointment->doctor_user_id, 'appointment_id' => $appointment->id]);
+    /**
+     * The appointment's open bill, or a new one for the consultation fee. Consultations are exempt from GST.
+     */
+    private function appointmentInvoice(Appointment $appointment, BillingService $billing, FeeResolver $fees): Invoice
+    {
+        $invoice = $this->openInvoice($appointment);
+
+        if ($invoice !== null) {
+            return $invoice;
         }
 
-        return $this->startPayment($invoice, $billing, $gateway);
+        $organization = $appointment->organization()->firstOrFail();
+        $fee = $fees->resolve($organization, (int) $appointment->doctor_user_id, $appointment->visit_type ?? VisitType::New, (int) $appointment->patient_id);
+
+        return $billing->createInvoice($organization, $appointment->patient, [
+            ['description' => 'Consultation', 'quantity' => 1, 'unit_paise' => $fee['amount_paise'], 'is_taxable' => false, 'gst_rate_bp' => 0],
+        ], ['location_id' => (int) $appointment->location_id, 'doctor_user_id' => (int) $appointment->doctor_user_id, 'appointment_id' => $appointment->id]);
+    }
+
+    private function openInvoice(Appointment $appointment): ?Invoice
+    {
+        return Invoice::withoutTenancy()->where('appointment_id', $appointment->id)->where('status', '!=', 'cancelled')->first();
+    }
+
+    private function upiOffered(Appointment $appointment, UpiPayments $upi): bool
+    {
+        return $appointment->status->holdsSlot()
+            && $appointment->status !== AppointmentStatus::Completed
+            && ($appointment->isAwaitingPayment() || $upi->ruleFor((int) $appointment->organization_id, $appointment->mode) !== 'off');
+    }
+
+    /**
+     * What the patient needs to pay by UPI, or null when there is nothing to show.
+     *
+     * @return array{vpa: string, payee_name: string, amount_paise: int, link: string, qr: string, claim: Payment|null}|null
+     */
+    private function upiPanel(Appointment $appointment, UpiPayments $upi, FeeResolver $fees, QrCodeService $qr): ?array
+    {
+        $settings = $upi->settingsFor((int) $appointment->organization_id);
+
+        if ($settings === null || ! $this->upiOffered($appointment, $upi)) {
+            return null;
+        }
+
+        $invoice = $this->openInvoice($appointment);
+        $claim = $invoice
+            ? Payment::withoutTenancy()->where('invoice_id', $invoice->id)->where('mode', 'upi')->whereIn('status', [Payment::UNVERIFIED, Payment::REJECTED])->latest('id')->first()
+            : null;
+        $amount = $invoice
+            ? $invoice->duePaise()
+            : $fees->resolve($appointment->organization()->firstOrFail(), (int) $appointment->doctor_user_id, $appointment->visit_type ?? VisitType::New, (int) $appointment->patient_id)['amount_paise'];
+
+        if ($amount <= 0 && $claim?->status !== Payment::UNVERIFIED) {
+            return null;
+        }
+
+        $link = $upi->link($settings, $amount, "Appointment {$appointment->id}");
+
+        return [
+            'vpa' => $settings['vpa'],
+            'payee_name' => $settings['payee_name'],
+            'amount_paise' => $amount,
+            'link' => $link,
+            'qr' => $qr->svg($link, 200),
+            'claim' => $claim,
+        ];
     }
 
     public function payInvoice(Request $request, int $id, BillingService $billing, GatewayFactory $gateways): View|RedirectResponse

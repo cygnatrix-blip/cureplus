@@ -167,6 +167,8 @@ Route::prefix('app')->name('app.')->middleware(['auth:web', 'account.active', 'n
                 Route::post('/invoices/{invoice}/share', [DocumentShareController::class, 'invoice'])->middleware('throttle:30,1')->middleware('org.approved')->can('view', 'invoice')->name('invoices.share');
                 Route::post('/invoices/{invoice}/pay', [InvoiceController::class, 'pay'])->middleware('org.approved')->can('update', 'invoice')->name('invoices.pay');
                 Route::post('/invoices/{invoice}/payment-link', [InvoiceController::class, 'paymentLink'])->middleware('org.approved')->can('update', 'invoice')->name('invoices.payment-link');
+                Route::post('/invoices/{invoice}/upi/{payment}/confirm', [InvoiceController::class, 'confirmUpi'])->can('update', 'invoice')->name('invoices.upi.confirm');
+                Route::post('/invoices/{invoice}/upi/{payment}/reject', [InvoiceController::class, 'rejectUpi'])->can('update', 'invoice')->name('invoices.upi.reject');
                 Route::post('/invoices/{invoice}/refund', [InvoiceController::class, 'refund'])->can('refund', 'invoice')->name('invoices.refund');
                 Route::post('/invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])->can('refund', 'invoice')->name('invoices.cancel');
                 Route::get('/dues', DuesController::class)->can('viewAny', Invoice::class)->name('dues.index');
@@ -181,6 +183,7 @@ Route::prefix('app')->name('app.')->middleware(['auth:web', 'account.active', 'n
                 Route::post('/integrations/razorpay/test', [IntegrationController::class, 'testRazorpay'])->can('integrations.manage')->name('integrations.razorpay.test');
                 Route::post('/integrations/cashfree', [IntegrationController::class, 'saveCashfree'])->can('integrations.manage')->name('integrations.cashfree');
                 Route::post('/integrations/cashfree/test', [IntegrationController::class, 'testCashfree'])->can('integrations.manage')->name('integrations.cashfree.test');
+                Route::post('/integrations/upi', [IntegrationController::class, 'saveUpi'])->can('integrations.manage')->name('integrations.upi');
                 Route::post('/integrations/smtp', [IntegrationController::class, 'saveSmtp'])->can('integrations.manage')->name('integrations.smtp');
                 Route::post('/integrations/smtp/test', [IntegrationController::class, 'testSmtp'])->can('integrations.manage')->name('integrations.smtp.test');
                 Route::post('/integrations/whatsapp/test', [IntegrationController::class, 'testWhatsapp'])->can('integrations.manage')->name('integrations.whatsapp.test');

@@ -96,10 +96,19 @@ class BillingSettingsController extends Controller
             'name' => ['required', 'string', 'max:150'],
             'price' => ['required', 'regex:/^\d+(\.\d{1,2})?$/'],
             'is_taxable' => ['sometimes', 'boolean'],
-            'gst_rate' => ['nullable', 'numeric', 'between:0,28'],
+            'gst_rate' => ['nullable', 'required_if_accepted:is_taxable', 'numeric', 'between:0,40'],
             'sac_hsn_code' => ['nullable', 'string', 'max:12'],
-        ]);
+        ], ['gst_rate.required_if_accepted' => 'Enter the GST rate for this item.']);
         $taxable = (bool) ($data['is_taxable'] ?? false);
+
+        // Only a GST-registered practice may collect GST, so an unregistered one cannot add tax to a bill.
+        if ($taxable && blank($this->tenant->organization()->gstin)) {
+            throw ValidationException::withMessages(['is_taxable' => 'Add your GSTIN in Organization settings before charging GST on an item.']);
+        }
+
+        if ($taxable && (float) $data['gst_rate'] <= 0) {
+            throw ValidationException::withMessages(['gst_rate' => 'Enter a GST rate above 0%, or untick "GST applies to this item".']);
+        }
 
         return [
             'name' => $data['name'],

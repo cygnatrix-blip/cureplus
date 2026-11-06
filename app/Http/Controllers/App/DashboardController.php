@@ -8,6 +8,7 @@ use App\Models\Appointment;
 use App\Models\FollowUp;
 use App\Models\Location;
 use App\Models\Membership;
+use App\Models\Payment;
 use App\Services\Reports\ReportService;
 use App\Services\SetupChecklist;
 use App\Tenancy\TenantContext;
@@ -45,6 +46,7 @@ class DashboardController extends Controller
             'followUpsDue' => Gate::check('appointments.manage') ? FollowUp::query()->where('status', 'pending')->where('due_on', '<=', today()->endOfDay())->count() : null,
             'missedFollowUps' => Gate::check('appointments.manage') ? FollowUp::query()->where('status', 'missed')->count() : null,
             'collections' => Gate::check('billing.view') ? $reports->dailyCash(CarbonImmutable::today(), $locationId)['net'] : null,
+            'upiToCheck' => Gate::check('billing.manage') ? Payment::query()->where('status', Payment::UNVERIFIED)->count() : 0,
             'locationCount' => Location::query()->active()->count(),
             'staffCount' => Membership::query()->active()->count(),
             'canManageStaff' => Gate::check('staff.manage'),

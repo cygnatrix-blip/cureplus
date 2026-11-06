@@ -46,7 +46,8 @@
             <x-field name="sac_hsn_code" label="SAC/HSN code" />
         </div>
         <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_taxable" value="1"> GST applies to this item</label>
-        <p class="text-xs text-slate-500">Ask your CA which services are taxable. Healthcare services are usually exempt; cosmetic procedures and pharmacy sales are often not.</p>
+        @error('is_taxable')<p class="field-error">{{ $message }}</p>@enderror
+        <p class="text-xs text-slate-500">Consultations and treatment are exempt from GST. Tick this only for taxable items, such as an instrument or a cosmetic procedure, and only if your practice is GST-registered: your GSTIN must be saved in Organization settings. Ask your CA for the rate and HSN/SAC code.</p>
         <button class="btn btn-secondary">Add item</button>
     </form>
 </x-layouts.app>

@@ -9,6 +9,7 @@ use App\Services\AuditLogger;
 use App\Services\Messaging\WhatsAppFactory;
 use App\Services\OrganizationMail;
 use App\Services\Payments\GatewayFactory;
+use App\Services\Payments\UpiPayments;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
@@ -28,6 +29,8 @@ class IntegrationController extends Controller
         return view('app.integrations.index', [
             'razorpay' => $integrations->get('razorpay'),
             'cashfree' => $integrations->get('cashfree'),
+            'upi' => $integrations->get(UpiPayments::KIND),
+            'hasGateway' => $integrations->only(GatewayFactory::KINDS)->contains('is_enabled', true),
             'cashfreeWebhookUrl' => route('webhooks.cashfree', $this->tenant->organization()->uuid),
             'smtp' => $integrations->get('smtp'),
             'emailsNotSent' => MessageLog::withoutTenancy()->where('organization_id', $this->tenant->id())->where('status', 'no_clinic_email')->where('created_at', '>=', now()->subDays(30))->count(),
@@ -101,6 +104,30 @@ class IntegrationController extends Controller
         $integration->forceFill(['last_tested_at' => now(), 'last_test_result' => $passed ? 'passed' : 'failed'])->save();
 
         return back()->with($passed ? 'success' : 'error', $passed ? 'Cashfree accepted your keys.' : 'Cashfree rejected these keys. Check the App ID, Secret Key and test or live mode.');
+    }
+
+    /**
+     * Any UPI ID works, personal or business: the practice chooses.
+     */
+    public function saveUpi(Request $request): RedirectResponse
+    {
+        $request->merge(['vpa' => mb_strtolower(trim((string) $request->input('vpa')))]);
+
+        $data = $request->validate([
+            'vpa' => ['nullable', 'required_if_accepted:is_enabled', 'max:100', 'regex:/^[a-z0-9._-]{2,64}@[a-z][a-z0-9]{1,63}$/'],
+            'payee_name' => ['nullable', 'required_if_accepted:is_enabled', 'string', 'max:60'],
+            'online' => ['required', Rule::in(array_keys(UpiPayments::RULES))],
+            'in_person' => ['required', Rule::in(array_keys(UpiPayments::RULES))],
+            'is_enabled' => ['sometimes', 'boolean'],
+        ], [
+            'vpa.regex' => 'This does not look like a UPI ID. It looks like name@bank, for example drroy@okicici.',
+            'vpa.required_if_accepted' => 'Enter the UPI ID patients should pay.',
+            'payee_name.required_if_accepted' => 'Enter the name patients should see when they pay.',
+        ]);
+
+        $this->save(UpiPayments::KIND, $data, [], ['vpa', 'payee_name', 'online', 'in_person'], (bool) ($data['is_enabled'] ?? false));
+
+        return back()->with('success', 'UPI settings saved.');
     }
 
     public function saveSmtp(Request $request): RedirectResponse

@@ -98,7 +98,8 @@ Nothing is deployed yet. See the deployment guide.
 
 - **Legal pages are drafts.** Have counsel write them, then paste them into Super Admin, System configuration.
 - **DPDP deletion against medical retention:** a deletion request removes the login and unlinks records, but clinics keep medical and billing records. Whether that and the retention periods are right is a legal question.
-- **GST:** consultations default to exempt and tax is shown as CGST and SGST, so inter-state IGST is not handled. Have a CA confirm the treatment and the invoice format.
+- **GST:** consultations are always exempt. Other items, such as instruments, can carry GST only when the practice has saved a GSTIN. Tax is shown as CGST and SGST, so inter-state IGST is not handled. Have a CA confirm the treatment and the invoice format.
+- **Direct UPI payments** are checked by hand: a patient's transaction ID counts only after staff find the money in their bank app and press Received.
 - **Hindi and Bengali translations** were not reviewed by native speakers or clinicians. This matters most for dosage instructions.
 - **ABDM:** readiness only. The ABHA field and FHIR export exist, but nothing has been certified against ABDM's sandbox.
 

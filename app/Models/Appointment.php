@@ -85,7 +85,7 @@ class Appointment extends Model
     }
 
     /**
-     * A video call the patient booked themselves, held for them until they pay.
+     * A booking the patient made themselves, held for them until they pay.
      */
     public function isAwaitingPayment(): bool
     {

@@ -84,6 +84,55 @@ class BillingTest extends TestCase
         $this->assertStringStartsWith('INV/', $invoice->number);
     }
 
+    public function test_an_unregistered_practice_cannot_add_an_item_that_charges_gst(): void
+    {
+        [, $owner] = $this->clinic();
+
+        $this->actingAs($owner, 'web')->post(route('app.billing-settings.items.store'), ['name' => 'Nebuliser', 'price' => '1500', 'is_taxable' => '1', 'gst_rate' => '5'])
+            ->assertSessionHasErrors(['is_taxable' => 'Add your GSTIN in Organization settings before charging GST on an item.']);
+
+        $this->assertSame(0, ServiceItem::withoutTenancy()->count());
+    }
+
+    public function test_a_registered_practice_adds_a_taxable_item_with_its_rate_and_code(): void
+    {
+        [$organization, $owner] = $this->clinic();
+        $organization->forceFill(['gstin' => '19AAAAA0000A1Z5'])->save();
+
+        $this->actingAs($owner, 'web')->post(route('app.billing-settings.items.store'), ['name' => 'Nebuliser', 'price' => '1500', 'is_taxable' => '1', 'gst_rate' => '5', 'sac_hsn_code' => '9019'])
+            ->assertSessionHasNoErrors();
+
+        $item = ServiceItem::withoutTenancy()->sole();
+        $this->assertTrue($item->is_taxable);
+        $this->assertSame(500, $item->gst_rate_bp);
+        $this->assertSame('9019', $item->sac_hsn_code);
+    }
+
+    public function test_a_taxable_item_needs_a_rate_above_zero(): void
+    {
+        [$organization, $owner] = $this->clinic();
+        $organization->forceFill(['gstin' => '19AAAAA0000A1Z5'])->save();
+
+        $this->actingAs($owner, 'web')->post(route('app.billing-settings.items.store'), ['name' => 'Nebuliser', 'price' => '1500', 'is_taxable' => '1'])
+            ->assertSessionHasErrors(['gst_rate' => 'Enter the GST rate for this item.']);
+        $this->post(route('app.billing-settings.items.store'), ['name' => 'Nebuliser', 'price' => '1500', 'is_taxable' => '1', 'gst_rate' => '0'])
+            ->assertSessionHasErrors(['gst_rate' => 'Enter a GST rate above 0%, or untick "GST applies to this item".']);
+
+        $this->assertSame(0, ServiceItem::withoutTenancy()->count());
+    }
+
+    public function test_a_bill_with_gst_is_refused_once_the_gstin_is_removed(): void
+    {
+        [$organization, $owner, , $patient] = $this->clinic();
+        $item = ServiceItem::withoutTenancy()->create(['organization_id' => $organization->id, 'name' => 'Nebuliser', 'price_paise' => 150000, 'is_taxable' => true, 'gst_rate_bp' => 500]);
+
+        $this->actingAs($owner, 'web')->post(route('app.invoices.store'), $this->bill($patient, [
+            'items_json' => json_encode([['service_item_id' => $item->id, 'description' => 'Nebuliser', 'quantity' => 1, 'unit' => '1500']]),
+        ]))->assertSessionHas('error', 'This bill has an item with GST, but your GSTIN is not saved. Add it in Organization settings, or make the item exempt.');
+
+        $this->assertSame(0, Invoice::withoutTenancy()->count());
+    }
+
     public function test_numbers_run_in_sequence_per_location_and_organization(): void
     {
         [$a, , $locationA, $patientA] = $this->clinic();

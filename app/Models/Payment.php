@@ -19,6 +19,21 @@ class Payment extends Model
 
     public const ONLINE_MODES = ['razorpay', 'cashfree'];
 
+    /** A UPI payment the patient says they made, which staff have not yet found in their bank app. */
+    public const UNVERIFIED = 'unverified';
+
+    /** Staff could not find it. The transaction ID stays saved, so it cannot be sent again. */
+    public const REJECTED = 'rejected';
+
+    public function statusLabel(): string
+    {
+        return match ($this->status) {
+            self::UNVERIFIED => 'To check',
+            self::REJECTED => 'Not received',
+            default => ucfirst((string) $this->status),
+        };
+    }
+
     protected $fillable = [
         'organization_id', 'invoice_id', 'amount_paise', 'mode', 'status', 'reference', 'gateway_link_id',
         'gateway_link_url', 'gateway_payment_id', 'paid_at', 'recorded_by',

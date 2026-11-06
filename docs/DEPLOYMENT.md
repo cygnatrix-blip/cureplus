@@ -144,6 +144,8 @@ Create templates in Meta Business Manager with these exact names and body parame
 | `video_consult_now` | name, doctor, link |
 | `video_payment_missed` | name, doctor, clinic, time |
 | `video_refund_needed` | name, clinic, time |
+| `appointment_payment_missed` | name, doctor, clinic, time |
+| `upi_payment_not_found` | name, amount, clinic |
 
 Each practice connects its own WhatsApp Business number under Integrations, and needs the patient templates approved in its own Meta account. Patients never hear from the platform's number. The platform's own sender (`WHATSAPP_TOKEN` and `WHATSAPP_PHONE_NUMBER_ID`) is only for messages to practice owners and doctors (the `organization_*` and `doctor_*` templates), and without it they get those by email only. Until a sender is configured, patient messages go by SMS if a gateway is set up. With neither, patients get email and push only.
 

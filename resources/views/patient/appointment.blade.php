@@ -30,11 +30,45 @@
                 <div><dt class="text-slate-500">{{ __('Status') }}</dt><dd><span class="badge badge-slate">{{ __($appointment->status->label()) }}</span></dd></div>
             </dl>
         </article>
-        @if ($appointment->isAwaitingPayment())
+        @if ($appointment->isAwaitingPayment() && ($upi['claim'] ?? null)?->status !== \App\Models\Payment::UNVERIFIED)
             <section class="card space-y-3 border-amber-300 bg-amber-50 p-5" role="status">
-                <h2 class="font-semibold text-amber-950">{{ __('Pay to confirm your video call') }}</h2>
-                <p class="text-sm text-amber-900">{{ __('We are holding this time for you until :time. You will get the link to join as soon as your payment reaches us.', ['time' => $appointment->pay_by->format('h:i A')]) }}</p>
+                <h2 class="font-semibold text-amber-950">{{ $appointment->isOnline() ? __('Pay to confirm your video call') : __('Pay to confirm your appointment') }}</h2>
+                <p class="text-sm text-amber-900">{{ $appointment->isOnline()
+                    ? __('We are holding this time for you until :time. You will get the link to join as soon as your payment reaches us.', ['time' => $appointment->pay_by->format('h:i A')])
+                    : __('We are holding this time for you until :time. Your appointment is confirmed as soon as your payment reaches us.', ['time' => $appointment->pay_by->format('h:i A')]) }}</p>
                 @if ($canPay)<form method="POST" action="{{ route('patient.appointments.pay', $appointment->id) }}">@csrf<button class="btn btn-primary w-full"><x-icon name="card" />{{ __('Pay now') }}</button></form>@endif
+            </section>
+        @endif
+        @if ($upi)
+            @php($money = \App\Support\Money::class)
+            <section class="card space-y-4 p-5" id="pay-by-upi">
+                @if ($upi['claim']?->status === \App\Models\Payment::UNVERIFIED)
+                    <h2 class="font-semibold text-slate-900">{{ __('Payment sent to the clinic') }}</h2>
+                    <p class="text-sm text-slate-600">{{ __('The clinic is checking your UPI payment of :amount (transaction ID :utr). You will hear from them once it is confirmed.', ['amount' => $money::format($upi['claim']->amount_paise), 'utr' => $upi['claim']->reference]) }}</p>
+                @else
+                    <div>
+                        <h2 class="font-semibold text-slate-900">{{ __('Pay :amount by UPI', ['amount' => $money::format($upi['amount_paise'])]) }}</h2>
+                        <p class="text-sm text-slate-600">{{ $appointment->isAwaitingPayment() ? __('Pay with any UPI app, then enter the transaction ID below.') : __('You can pay now with any UPI app, or pay at the clinic.') }}</p>
+                    </div>
+                    @if ($upi['claim']?->status === \App\Models\Payment::REJECTED)
+                        <p class="rounded-lg bg-rose-50 p-3 text-sm text-rose-900" role="alert">{{ __('The clinic could not find your payment with transaction ID :utr. Please check the number in your UPI app and send it again.', ['utr' => $upi['claim']->reference]) }}</p>
+                    @endif
+                    <div class="flex flex-col items-center gap-3 sm:flex-row sm:items-start">
+                        <div class="w-56 flex-none rounded-xl border border-slate-200 bg-white p-2" role="img" aria-label="{{ __('UPI QR code') }}">{!! $upi['qr'] !!}</div>
+                        <div class="w-full space-y-2 text-sm">
+                            <p class="text-slate-600">{{ __('Scan with any UPI app, or pay to') }}</p>
+                            <p class="font-mono text-base font-semibold break-all text-slate-900">{{ $upi['vpa'] }}</p>
+                            @if ($upi['payee_name'])<p class="text-slate-600">{{ $upi['payee_name'] }}</p>@endif
+                            <p class="text-slate-600">{{ __('Amount') }}: <span class="font-semibold text-slate-900">{{ $money::format($upi['amount_paise']) }}</span></p>
+                            <a class="btn btn-primary w-full sm:hidden" href="{{ $upi['link'] }}">{{ __('Pay with UPI app') }}</a>
+                        </div>
+                    </div>
+                    <form method="POST" action="{{ route('patient.appointments.upi', $appointment->id) }}" class="space-y-3 border-t border-slate-100 pt-4">
+                        @csrf
+                        <x-field name="utr" :label="__('UPI transaction ID (UTR)')" inputmode="numeric" autocomplete="off" :hint="__('The 12-digit number shown in your UPI app after paying.')" required />
+                        <button class="btn btn-secondary w-full sm:w-auto">{{ __('I have paid') }}</button>
+                    </form>
+                @endif
             </section>
         @endif
         @if ($appointment->canJoinVideo())

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AppointmentMode;
 use App\Enums\AppointmentStatus;
 use App\Enums\VisitType;
 use App\Exceptions\SlotUnavailableException;
@@ -9,18 +10,21 @@ use App\Models\Appointment;
 use App\Models\Invoice;
 use App\Models\Membership;
 use App\Models\Organization;
+use App\Models\Payment;
 use App\Services\Billing\FeeResolver;
 use App\Services\Messaging\AppointmentMessages;
 use App\Services\Messaging\Notifier;
 use App\Services\Payments\GatewayFactory;
+use App\Services\Payments\UpiPayments;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Patients who book a video call themselves pay before they get the link, wherever the clinic
- * can take payment online. The time is held for them meanwhile, then given back if they do not.
+ * Patients who book themselves pay before the booking is confirmed: always for a video call
+ * when the clinic has a gateway, and for either kind when the clinic asks for UPI first.
+ * The time is held for them meanwhile, then given back if they do not pay.
  */
 class VideoPayments
 {
@@ -28,6 +32,7 @@ class VideoPayments
 
     public function __construct(
         private readonly GatewayFactory $gateways,
+        private readonly UpiPayments $upi,
         private readonly FeeResolver $fees,
         private readonly AppointmentMessages $messages,
         private readonly DoctorCalendar $calendar,
@@ -36,13 +41,21 @@ class VideoPayments
     ) {}
 
     /**
-     * Null means nothing has to be paid first: no gateway, or a free consultation.
+     * Null means nothing has to be paid first: no way to pay, not required, or a free consultation.
      */
-    public function deadlineFor(int $organizationId, int $doctorId, VisitType $visitType, int $patientId, CarbonImmutable $startsAt): ?Carbon
+    public function deadlineFor(int $organizationId, int $doctorId, VisitType $visitType, int $patientId, CarbonImmutable $startsAt, AppointmentMode $mode = AppointmentMode::Online): ?Carbon
     {
         $organization = Organization::query()->find($organizationId);
 
-        if ($organization === null || $this->gateways->forOrganization($organizationId) === null) {
+        if ($organization === null) {
+            return null;
+        }
+
+        $mustPayFirst = $this->gateways->forOrganization($organizationId) !== null
+            ? $mode === AppointmentMode::Online
+            : $this->upi->ruleFor($organizationId, $mode) === 'required';
+
+        if (! $mustPayFirst) {
             return null;
         }
 
@@ -66,7 +79,7 @@ class VideoPayments
 
         $appointment = Appointment::withoutTenancy()->find($invoice->appointment_id);
 
-        if ($appointment === null || ! $appointment->isOnline()) {
+        if ($appointment === null) {
             return;
         }
 
@@ -96,6 +109,11 @@ class VideoPayments
                 continue;
             }
 
+            // The patient sent a UPI transaction ID in time, so the time stays held while staff check it.
+            if ($this->hasUpiPaymentToCheck($appointment)) {
+                continue;
+            }
+
             $appointment->update([
                 'status' => AppointmentStatus::Cancelled,
                 'cancel_reason' => self::RELEASED_REASON,
@@ -104,7 +122,7 @@ class VideoPayments
                 'pay_by' => null,
             ]);
             $this->audit->record('appointments.video_released_unpaid', $appointment, organizationId: (int) $appointment->organization_id);
-            $this->messages->send($appointment, 'video_payment_missed');
+            $this->messages->send($appointment, $appointment->isOnline() ? 'video_payment_missed' : 'appointment_payment_missed');
             $released++;
         }
 
@@ -148,6 +166,14 @@ class VideoPayments
 
         $this->audit->record('appointments.video_restored_after_payment', $appointment, organizationId: (int) $appointment->organization_id);
         $this->messages->send($appointment, 'appointment_booked');
+    }
+
+    private function hasUpiPaymentToCheck(Appointment $appointment): bool
+    {
+        return Payment::withoutTenancy()
+            ->where('status', Payment::UNVERIFIED)
+            ->whereIn('invoice_id', Invoice::withoutTenancy()->where('appointment_id', $appointment->id)->select('id'))
+            ->exists();
     }
 
     private function tellOwners(Appointment $appointment): void

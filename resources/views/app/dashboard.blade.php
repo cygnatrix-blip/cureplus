@@ -4,6 +4,12 @@
         @can('appointments.manage')<a class="btn btn-primary" href="{{ route('app.appointments.create') }}">Book</a>@endcan
     </x-page-header>
     @include('partials.setup-checklist')
+    @if ($upiToCheck > 0)
+        <a class="mb-4 flex items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950" href="{{ route('app.invoices.index', ['status' => 'upi_to_check']) }}">
+            <span><strong>{{ $upiToCheck }} UPI {{ \Illuminate\Support\Str::plural('payment', $upiToCheck) }}</strong> from patients to check against your bank app.</span>
+            <span class="font-medium underline">Check now</span>
+        </a>
+    @endif
     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         @if ($canSeeAppointments)
             <x-stat label="Appointments" :value="$appointmentsToday" />

@@ -16,7 +16,7 @@
         <tbody>
             @foreach ($invoice->items as $item)
                 <tr>
-                    <td>{{ $item->description }}</td>
+                    <td>{{ $item->description }}@if ($item->sac_hsn_code) <span class="text-xs text-slate-500">({{ $item->sac_hsn_code }})</span>@endif</td>
                     <td class="text-right">{{ $item->quantity }}</td>
                     <td class="text-right">{{ $money::format($item->unit_paise) }}</td>
                     @if ($invoice->isGstInvoice())<td class="text-right">{{ $item->gst_rate_bp / 100 }}%</td>@endif

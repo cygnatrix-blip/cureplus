@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### UPI payments without a gateway, and GST only with a GSTIN
+
+- Practices without Razorpay or Cashfree can take UPI payments directly into their own UPI ID, personal or business. For video calls and clinic visits separately, they choose whether patients who book online may pay or must pay.
+- Patients get a QR code and a "Pay with UPI app" button with the amount filled in, then enter the 12-digit transaction ID. A booking that requires payment is held until then.
+- Staff confirm each UPI payment against their bank app with Received or Not received, from the bill. The dashboard shows how many are waiting, and bills can be filtered by "UPI to check". A transaction ID can be used once only.
+- New messages: `appointment_payment_missed` and `upi_payment_not_found`.
+- Items can carry GST only when the practice has saved a GSTIN, and a taxable item needs a rate above 0%. Rates up to 40% are accepted. Bills now show the HSN/SAC code on screen as well as in the PDF.
+- Saving a bill that the system refuses now shows a message instead of an error page.
+
 ### Send from your own phone
 
 - WhatsApp buttons send through the practice's WhatsApp Business number when connected. Patients no longer fall back to the platform's number.

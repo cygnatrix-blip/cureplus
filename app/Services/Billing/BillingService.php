@@ -16,6 +16,7 @@ use App\Services\SequenceService;
 use App\Services\VideoPayments;
 use App\Support\Money;
 use Carbon\CarbonInterface;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -40,6 +41,11 @@ class BillingService
 
         // Tax rules decide the document: a GST invoice only when something taxable is on it.
         $isGst = $totals['tax_paise'] > 0 || $totals['taxable_paise'] > 0;
+
+        // A taxable item saved earlier stays on the price list after a GSTIN is removed.
+        if ($isGst && blank($organization->gstin)) {
+            throw new BillingException('This bill has an item with GST, but your GSTIN is not saved. Add it in Organization settings, or make the item exempt.');
+        }
 
         return DB::transaction(function () use ($organization, $patient, $lines, $context, $totals, $isGst): Invoice {
             $invoice = Invoice::withoutTenancy()->create([
@@ -152,6 +158,99 @@ class BillingService
         return $changed;
     }
 
+    /**
+     * The patient says they paid by UPI. Nothing counts as paid until staff confirm it,
+     * and a transaction ID is accepted once per organization, even after it is rejected.
+     */
+    public function submitUpiPayment(Invoice $invoice, string $utr): Payment
+    {
+        try {
+            $payment = DB::transaction(function () use ($invoice, $utr): Payment {
+                $locked = $this->lock($invoice);
+
+                if ($locked->status === 'cancelled' || $locked->duePaise() <= 0) {
+                    throw new BillingException('Nothing is due on this bill.');
+                }
+
+                if (Payment::withoutTenancy()->where('invoice_id', $locked->id)->where('status', Payment::UNVERIFIED)->exists()) {
+                    throw new BillingException('The clinic is already checking a payment for this bill.');
+                }
+
+                return Payment::withoutTenancy()->create([
+                    'organization_id' => $locked->organization_id,
+                    'invoice_id' => $locked->id,
+                    'amount_paise' => $locked->duePaise(),
+                    'mode' => 'upi',
+                    'status' => Payment::UNVERIFIED,
+                    'reference' => $utr,
+                    'gateway_payment_id' => "upi:{$utr}",
+                ]);
+            });
+        } catch (UniqueConstraintViolationException) {
+            throw new BillingException('This UPI transaction ID has already been used.');
+        }
+
+        $this->audit->record('payments.upi_submitted', $payment, organizationId: (int) $payment->organization_id);
+
+        return $payment;
+    }
+
+    /**
+     * Staff found the money in their bank app. From here it is an ordinary UPI payment.
+     */
+    public function confirmUpiPayment(Payment $payment): void
+    {
+        $confirmed = DB::transaction(function () use ($payment): ?Invoice {
+            $locked = Payment::withoutTenancy()->whereKey($payment->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->status !== Payment::UNVERIFIED) {
+                return null;
+            }
+
+            $invoice = $this->lock(Invoice::withoutTenancy()->findOrFail($locked->invoice_id));
+
+            if ($invoice->status === 'cancelled' || $locked->amount_paise > $invoice->duePaise()) {
+                throw new BillingException('This bill has changed since the patient paid. Mark this payment as not received, and record what you got with Take payment.');
+            }
+
+            $locked->forceFill(['status' => 'captured', 'paid_at' => now(), 'recorded_by' => Auth::guard('web')->id()])->save();
+            $this->applyPaid($invoice, $locked->amount_paise);
+            $payment->setRawAttributes($locked->getAttributes());
+
+            return $invoice;
+        });
+
+        if ($confirmed !== null) {
+            $this->audit->record('payments.upi_confirmed', $payment, organizationId: (int) $payment->organization_id);
+            $this->tellPatient($confirmed, $payment);
+            $this->videoPayments->settled($confirmed->refresh());
+        }
+    }
+
+    public function rejectUpiPayment(Payment $payment): void
+    {
+        $rejected = Payment::withoutTenancy()
+            ->whereKey($payment->id)
+            ->where('status', Payment::UNVERIFIED)
+            ->update(['status' => Payment::REJECTED, 'recorded_by' => Auth::guard('web')->id()]);
+
+        if ($rejected === 0) {
+            return;
+        }
+
+        $this->audit->record('payments.upi_rejected', $payment, organizationId: (int) $payment->organization_id);
+
+        $patient = Patient::withoutTenancy()->find(Invoice::withoutTenancy()->whereKey($payment->invoice_id)->value('patient_id'));
+        $organization = Organization::query()->find($payment->organization_id);
+
+        if ($patient && $organization) {
+            $this->notifier->notifyPatient($patient, 'upi_payment_not_found', [
+                'amount' => Money::format($payment->amount_paise),
+                'clinic' => $organization->name,
+            ], "payment:{$payment->id}:not-found");
+        }
+    }
+
     public function createPaymentLink(Invoice $invoice, PaymentGateway $gateway): Payment
     {
         // Explicit, because the patient portal calls this with no tenant set.
@@ -242,6 +341,10 @@ class BillingService
 
             if ($locked->paid_paise > $locked->refunded_paise) {
                 throw new BillingException('Refund the payments on this bill before cancelling it.');
+            }
+
+            if (Payment::withoutTenancy()->where('invoice_id', $locked->id)->where('status', Payment::UNVERIFIED)->exists()) {
+                throw new BillingException('The patient sent a UPI payment for this bill. Check it before cancelling.');
             }
 
             $locked->update(['status' => 'cancelled', 'cancelled_at' => now(), 'cancel_reason' => $reason]);

@@ -50,7 +50,7 @@ class AppointmentService
                     'kind' => 'booked',
                     'mode' => $mode,
                     'video_link' => $mode === AppointmentMode::Online ? $this->video->linkFor($doctorId) : null,
-                    'pay_by' => $mode === AppointmentMode::Online && $source === 'link' ? $this->videoPayments->deadlineFor($organizationId, $doctorId, $visitType, (int) $patient->id, $startsAt) : null,
+                    'pay_by' => $source === 'link' ? $this->videoPayments->deadlineFor($organizationId, $doctorId, $visitType, (int) $patient->id, $startsAt, $mode) : null,
                     'source' => $source,
                     'visit_type' => $visitType,
                     'scheduled_on' => $startsAt->toDateString(),
