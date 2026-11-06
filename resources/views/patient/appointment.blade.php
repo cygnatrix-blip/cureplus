@@ -113,12 +113,16 @@
                     @error('starts_at')<p class="field-error">{{ $message }}</p>@enderror
                 </form>
             </section>
-            <form method="POST" action="{{ route('patient.appointments.cancel', $appointment->id) }}" class="card space-y-2 p-5" data-confirm="{{ __('Cancel') }}?">
-                @csrf
-                <h2 class="font-semibold text-slate-900">{{ __('Cancel this appointment') }}</h2>
-                <x-field name="reason" :label="__('Reason')" required />
-                <button class="btn btn-danger">{{ __('Cancel') }}</button>
-            </form>
+            @if ($canCancel)
+                <form method="POST" action="{{ route('patient.appointments.cancel', $appointment->id) }}" class="card space-y-2 p-5" data-confirm="{{ __('Cancel') }}?">
+                    @csrf
+                    <h2 class="font-semibold text-slate-900">{{ __('Cancel this appointment') }}</h2>
+                    <x-field name="reason" :label="__('Reason')" required />
+                    <button class="btn btn-danger">{{ __('Cancel') }}</button>
+                </form>
+            @else
+                <p class="card p-5 text-sm text-slate-600">{{ __('This appointment is paid. Please contact the clinic or message your doctor to cancel it and arrange a refund.') }}</p>
+            @endif
         @endif
     </div>
 </x-layouts.patient>

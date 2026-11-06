@@ -44,6 +44,7 @@
 <html lang="{{ app()->getLocale() }}" class="h-full">
 <head>@include('partials.head', ['title' => $title, 'portal' => 'app'])</head>
 <body class="h-full antialiased">
+    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:shadow-lg">{{ __('Skip to content') }}</a>
 <div class="flex min-h-full" x-data="sidebar">
     <div x-show="open" x-cloak class="fixed inset-0 z-40 bg-slate-900/50 lg:hidden" @click="close"></div>
     <aside :class="panelClass" class="fixed inset-y-0 left-0 z-50 flex w-64 -translate-x-full flex-col bg-slate-950 transition-transform lg:translate-x-0">
@@ -99,7 +100,7 @@
                 </div>
             </div>
         </header>
-        <main class="mx-auto w-full max-w-7xl flex-1 px-3 py-4 sm:px-5 sm:py-6">
+        <main id="main" class="mx-auto w-full max-w-7xl flex-1 px-3 py-4 sm:px-5 sm:py-6">
             @if ($organization?->isAwaitingApproval())@include('partials.verification-banner', ['organization' => $organization])@endif
             @if ($organization?->accessEndsSoon())
                 <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-900" role="status">Your access ends on {{ $organization->access_until->format('d M Y') }}. Please contact us to renew so your work is not interrupted.</div>

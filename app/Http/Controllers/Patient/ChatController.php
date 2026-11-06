@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Patient;
 
 use App\Exceptions\ChatClosedException;
+use App\Exceptions\ChatLimitException;
 use App\Http\Controllers\App\AppointmentChatController;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
@@ -46,8 +47,8 @@ class ChatController extends Controller
 
         try {
             $this->chat->send($appointment, AppointmentMessage::FROM_PATIENT, $data['body'] ?? null, $request->file('file'), $this->account($request));
-        } catch (ChatClosedException) {
-            return back()->with('error', __('This chat is closed.'));
+        } catch (ChatClosedException|ChatLimitException $exception) {
+            return back()->withInput()->with('error', __($exception->getMessage()));
         }
 
         return back();

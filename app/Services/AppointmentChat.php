@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\AppointmentStatus;
 use App\Exceptions\ChatClosedException;
+use App\Exceptions\ChatLimitException;
 use App\Models\Appointment;
 use App\Models\AppointmentMessage;
 use App\Models\Organization;
@@ -27,6 +28,9 @@ class AppointmentChat
 
     /** Messages shown at once. Older ones stay stored and in the patient's data export. */
     public const SHOWN = 200;
+
+    /** Files each side may send in one chat per day, so uploads cannot fill the server's disk. */
+    public const FILES_PER_DAY = 20;
 
     /** At most one notification per side, per chat, in this many seconds, so a burst of messages is one alert. */
     private const NOTIFY_WINDOW_SECONDS = 600;
@@ -55,6 +59,10 @@ class AppointmentChat
     {
         if (! $appointment->isChatOpen()) {
             throw new ChatClosedException;
+        }
+
+        if ($file !== null && $this->filesSentToday($appointment, $from) >= self::FILES_PER_DAY) {
+            throw new ChatLimitException;
         }
 
         $attachment = $file ? $this->store($file, (int) $appointment->organization_id) : [];
@@ -115,6 +123,16 @@ class AppointmentChat
             ->whereIn('status', [AppointmentStatus::Completed->value, AppointmentStatus::Cancelled->value, AppointmentStatus::NoShow->value])
             ->whereDate('scheduled_on', '<', today()->subDays(self::AUTO_CLOSE_DAYS))
             ->update(['chat_closed_at' => now()]);
+    }
+
+    private function filesSentToday(Appointment $appointment, string $from): int
+    {
+        return AppointmentMessage::withoutTenancy()
+            ->where('appointment_id', $appointment->id)
+            ->where('sender_type', $from)
+            ->whereNotNull('attachment_path')
+            ->where('created_at', '>=', today())
+            ->count();
     }
 
     /**

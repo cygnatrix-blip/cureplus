@@ -11,6 +11,7 @@
     @include('partials.brand-style', ['organization' => $brand])
 </head>
 <body class="min-h-full bg-slate-50 pb-20 antialiased lg:pb-0">
+    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:shadow-lg">{{ __('Skip to content') }}</a>
     <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
             <a href="{{ $account ? route('patient.home') : route('patient.login') }}" class="flex min-w-0 items-center gap-3">
@@ -36,7 +37,7 @@
             </div>
         </div>
     </header>
-    <main class="mx-auto max-w-6xl px-4 py-5">
+    <main id="main" class="mx-auto max-w-6xl px-4 py-5">
         @include('partials.flash')
         {{ $slot }}
         <div class="mt-6">@include('partials.install-button')</div>

@@ -77,6 +77,7 @@ class PortalController extends Controller
         return view('patient.appointment', [
             'appointment' => $appointment,
             'canChange' => $this->canChange($appointment),
+            'canCancel' => $this->canChange($appointment) && ! $this->hasPayment($appointment),
             'date' => $date,
             'slots' => $this->canChange($appointment)
                 ? app(DoctorCalendar::class)->slots((int) $appointment->doctor_user_id, (int) $appointment->organization_id, (int) $appointment->location_id, $date)
@@ -115,6 +116,11 @@ class PortalController extends Controller
     {
         $appointment = $this->records->appointment($this->account($request), $id);
         abort_unless($this->canChange($appointment), 422);
+
+        if ($this->hasPayment($appointment)) {
+            return back()->with('error', __('This appointment is paid. Please contact the clinic or message your doctor to cancel it and arrange a refund.'));
+        }
+
         $data = $request->validate(['reason' => ['required', 'string', 'max:255']]);
 
         $appointments->cancel($appointment, $data['reason']);
@@ -354,6 +360,18 @@ class PortalController extends Controller
     private function canChange(Appointment $appointment): bool
     {
         return $appointment->status === AppointmentStatus::Booked && $appointment->starts_at !== null && $appointment->starts_at->isFuture();
+    }
+
+    /**
+     * Money already sent, or sent and being checked, has to come back through the clinic,
+     * so a paid appointment is cancelled by the clinic, which can then refund it.
+     */
+    private function hasPayment(Appointment $appointment): bool
+    {
+        return Payment::withoutTenancy()
+            ->whereIn('status', ['captured', Payment::UNVERIFIED])
+            ->whereIn('invoice_id', Invoice::withoutTenancy()->where('appointment_id', $appointment->id)->select('id'))
+            ->exists();
     }
 
     private function organizationOf(int $id): Organization

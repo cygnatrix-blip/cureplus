@@ -55,9 +55,10 @@ class CalendarController extends Controller
         return back()->with('success', 'Hours added.');
     }
 
-    public function destroyAvailability(DoctorAvailability $availability): RedirectResponse
+    public function destroyAvailability(DoctorAvailability $availability, AuditLogger $audit): RedirectResponse
     {
         $availability->delete();
+        $audit->record('doctor_availability.removed', $availability, ['doctor_user_id' => $availability->doctor_user_id]);
 
         return back()->with('success', 'Hours removed.');
     }
@@ -88,9 +89,10 @@ class CalendarController extends Controller
         return back()->with('success', 'Time blocked.');
     }
 
-    public function destroyBlock(CalendarBlock $block): RedirectResponse
+    public function destroyBlock(CalendarBlock $block, AuditLogger $audit): RedirectResponse
     {
         $block->delete();
+        $audit->record('calendar_blocks.removed', $block, ['doctor_user_id' => $block->doctor_user_id]);
 
         return back()->with('success', 'Block removed.');
     }

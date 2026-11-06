@@ -10,6 +10,13 @@
 - The queue now shows a "Not finished from earlier days" section, so appointments left booked, waiting or in consultation are no longer lost overnight.
 - Web push now uses the standard aes128gcm encryption.
 
+### Audit fixes
+
+- A patient can no longer cancel a paid appointment online, so the money is not left with the clinic unseen. They are asked to contact the clinic, which can cancel and refund. Rescheduling still works.
+- Each side can send up to 20 files a day in one chat, so uploads cannot fill the server's disk.
+- Removing a doctor's hours or a calendar block is now recorded in the audit log.
+- The clinic and patient portals have a "Skip to content" link for keyboard and screen-reader users.
+
 ### UPI payments without a gateway, and GST only with a GSTIN
 
 - Practices without Razorpay or Cashfree can take UPI payments directly into their own UPI ID, personal or business. For video calls and clinic visits separately, they choose whether patients who book online may pay or must pay.

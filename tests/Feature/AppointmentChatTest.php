@@ -124,6 +124,21 @@ class AppointmentChatTest extends TestCase
         $this->actingAs(PatientAccount::factory()->create(), 'patient')->get(route('patient.appointments.chat.file', [$appointment->id, $message->id]))->assertNotFound();
     }
 
+    public function test_a_patient_can_send_only_so_many_files_a_day_in_one_chat(): void
+    {
+        Storage::fake(config('filesystems.default'));
+        [, , , , $appointment, $account] = $this->clinic();
+        AppointmentMessage::factory()->count(AppointmentChat::FILES_PER_DAY)->create([
+            'appointment_id' => $appointment->id, 'attachment_disk' => 'local', 'attachment_path' => 'chat/x.pdf', 'attachment_name' => 'x.pdf',
+        ]);
+
+        $this->patientSends($account, $appointment, ['file' => UploadedFile::fake()->create('one-more.pdf', 10, 'application/pdf')])
+            ->assertSessionHas('error', 'You can send up to 20 files a day in this chat. Please try again tomorrow.');
+        $this->patientSends($account, $appointment, ['body' => 'Text still goes through'])->assertSessionHasNoErrors();
+
+        $this->assertSame(AppointmentChat::FILES_PER_DAY + 1, AppointmentMessage::withoutTenancy()->count());
+    }
+
     public function test_an_empty_message_or_an_unsafe_file_is_refused(): void
     {
         Storage::fake(config('filesystems.default'));

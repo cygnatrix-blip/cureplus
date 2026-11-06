@@ -292,6 +292,23 @@ class UpiPaymentTest extends TestCase
         $this->assertSame('unpaid', $invoice->refresh()->status);
     }
 
+    public function test_a_patient_cannot_cancel_online_once_they_have_paid_so_the_clinic_can_refund(): void
+    {
+        [, $owner, $location, $doctor, $patient, $account] = $this->clinic(inPerson: 'optional');
+        $appointment = $this->book($patient, $doctor, $location);
+        $this->submit($account, $appointment, '412356789012');
+        $message = 'This appointment is paid. Please contact the clinic or message your doctor to cancel it and arrange a refund.';
+
+        $this->post(route('patient.appointments.cancel', $appointment->id), ['reason' => 'Busy'])->assertSessionHas('error', $message);
+        $this->assertSame(AppointmentStatus::Booked, $appointment->refresh()->status);
+
+        $this->actingAs($owner, 'web')->post(route('app.invoices.upi.confirm', [Invoice::withoutTenancy()->sole(), Payment::withoutTenancy()->sole()]));
+
+        $this->actingAs($account, 'patient')->post(route('patient.appointments.cancel', $appointment->id), ['reason' => 'Busy'])->assertSessionHas('error', $message);
+        $this->get(route('patient.appointments.show', $appointment->id))->assertSee($message)->assertDontSee(route('patient.appointments.cancel', $appointment->id));
+        $this->assertSame(AppointmentStatus::Booked, $appointment->refresh()->status);
+    }
+
     public function test_the_owner_saves_upi_settings_and_a_malformed_upi_id_is_refused(): void
     {
         [$organization, $owner] = $this->organizationWithOwner();
