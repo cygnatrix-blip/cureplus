@@ -25,8 +25,10 @@ class WebPushSender implements PushSender
             'privateKey' => (string) config('messages.push.private_key'),
         ]], ['TTL' => 3600], $this->client);
 
+        // The library still defaults to the draft "aesgcm" encoding. Every current browser takes the
+        // standard one (RFC 8291), which is also what VAPID's "vapid" Authorization header pairs with.
         $report = $webPush->sendOneNotification(
-            Subscription::create(['endpoint' => $subscription->endpoint, 'publicKey' => $subscription->public_key, 'authToken' => $subscription->auth_token]),
+            Subscription::create(['endpoint' => $subscription->endpoint, 'publicKey' => $subscription->public_key, 'authToken' => $subscription->auth_token, 'contentEncoding' => 'aes128gcm']),
             (string) json_encode($message),
         );
 
