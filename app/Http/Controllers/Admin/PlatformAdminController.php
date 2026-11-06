@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\PlatformAdmin;
 use App\Services\AuditLogger;
+use App\Services\PlatformAdminRecovery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
@@ -42,24 +42,13 @@ class PlatformAdminController extends Controller
      * Sets a one-time temporary password and clears 2FA, so a locked-out admin can get back
      * in. Nobody can do this to themselves, which keeps it from being a way around 2FA.
      */
-    public function resetPassword(Request $request, PlatformAdmin $admin, AuditLogger $audit): RedirectResponse
+    public function resetPassword(Request $request, PlatformAdmin $admin, PlatformAdminRecovery $recovery): RedirectResponse
     {
         if ($admin->is($request->user())) {
             return back()->with('error', 'Another admin has to do this for you.');
         }
 
-        $password = Str::password(20);
-        $admin->forceFill([
-            'password' => $password,
-            'failed_login_attempts' => 0,
-            'locked_until' => null,
-            'two_factor_method' => null,
-            'two_factor_secret' => null,
-            'two_factor_recovery_codes' => null,
-            'two_factor_confirmed_at' => null,
-        ])->save();
-        DB::table('sessions')->where('platform_admin_id', $admin->id)->delete();
-        $audit->record('platform_admins.password_reset', $admin);
+        $password = $recovery->reset($admin);
 
         return back()->with('status', "Temporary password for {$admin->name}. Copy it now: {$password}");
     }

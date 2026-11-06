@@ -82,7 +82,7 @@ $PHP_BIN artisan cureplus:seed-defaults
 $PHP_BIN artisan cureplus:create-admin you@example.com "Your Name"
 ```
 
-Save the printed password, sign in at `/admin/login`, and set up 2FA. Create a second super admin too, because only another admin can reset a locked-out admin. Never run the demo seeder in production; it refuses, but do not try.
+Save the printed password, sign in at `/admin/login`, and set up 2FA. Create a second super admin too, so one can reset the other from the Admins page. If no admin can sign in, run `$PHP_BIN artisan cureplus:reset-admin you@example.com` over SSH: it prints a temporary password once, unlocks the account and clears two-factor sign-in. Never run the demo seeder in production; it refuses, but do not try.
 
 ### 6. Add the cron job
 
