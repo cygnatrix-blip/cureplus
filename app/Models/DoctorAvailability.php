@@ -12,6 +12,9 @@ class DoctorAvailability extends Model
 
     protected $table = 'doctor_availability';
 
+    /** Index 0 is Sunday, matching Carbon's dayOfWeek. */
+    public const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
     protected $fillable = ['organization_id', 'location_id', 'doctor_user_id', 'weekday', 'start_time', 'end_time', 'slot_minutes', 'is_active'];
 
     protected function casts(): array

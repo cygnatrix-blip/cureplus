@@ -96,7 +96,10 @@ class DoctorCalendar
     /**
      * Whether a new weekly window would clash with the doctor's hours anywhere else.
      */
-    public function availabilityOverlaps(int $doctorId, int $weekday, string $start, string $end): bool
+    /**
+     * @param  list<int>  $ignoreIds  rows being edited, which must not clash with themselves
+     */
+    public function availabilityOverlaps(int $doctorId, int $weekday, string $start, string $end, array $ignoreIds = []): bool
     {
         return DoctorAvailability::withoutTenancy()
             ->where('doctor_user_id', $doctorId)
@@ -104,6 +107,7 @@ class DoctorCalendar
             ->where('is_active', true)
             ->where('start_time', '<', $end)
             ->where('end_time', '>', $start)
+            ->when($ignoreIds !== [], fn ($query) => $query->whereNotIn('id', $ignoreIds))
             ->exists();
     }
 

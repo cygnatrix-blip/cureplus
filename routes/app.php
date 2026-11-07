@@ -136,6 +136,9 @@ Route::prefix('app')->name('app.')->middleware(['auth:web', 'account.active', 'n
 
                 Route::get('/calendar', [CalendarController::class, 'index'])->can('appointments.manage')->name('calendar.index');
                 Route::post('/calendar/availability', [CalendarController::class, 'storeAvailability'])->can('appointments.manage')->name('calendar.availability.store');
+                Route::post('/calendar/availability/copy', [CalendarController::class, 'copyDay'])->can('appointments.manage')->name('calendar.availability.copy');
+                Route::get('/calendar/availability/{availability}/edit', [CalendarController::class, 'editAvailability'])->can('appointments.manage')->name('calendar.availability.edit');
+                Route::put('/calendar/availability/{availability}', [CalendarController::class, 'updateAvailability'])->can('appointments.manage')->name('calendar.availability.update');
                 Route::delete('/calendar/availability/{availability}', [CalendarController::class, 'destroyAvailability'])->can('appointments.manage')->name('calendar.availability.destroy');
                 Route::post('/calendar/blocks', [CalendarController::class, 'storeBlock'])->can('appointments.manage')->name('calendar.blocks.store');
                 Route::delete('/calendar/blocks/{block}', [CalendarController::class, 'destroyBlock'])->can('appointments.manage')->name('calendar.blocks.destroy');

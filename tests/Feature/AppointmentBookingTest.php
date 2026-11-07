@@ -197,7 +197,7 @@ class AppointmentBookingTest extends TestCase
         $locationB = Location::factory()->create(['organization_id' => $organizationB->id]);
         $this->addMember($organizationB, ['doctor'], $doctor, $locationB);
 
-        $payload = ['doctor_user_id' => $doctor->id, 'location_id' => $locationB->id, 'weekday' => $this->monday->dayOfWeek, 'slot_minutes' => 15];
+        $payload = ['doctor_user_id' => $doctor->id, 'location_id' => $locationB->id, 'weekdays' => [$this->monday->dayOfWeek], 'slot_minutes' => 15];
 
         $this->actingAs($ownerB, 'web');
 

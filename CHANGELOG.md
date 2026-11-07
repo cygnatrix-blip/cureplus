@@ -10,6 +10,13 @@
 - The queue now shows a "Not finished from earlier days" section, so appointments left booked, waiting or in consultation are no longer lost overnight.
 - Web push now uses the standard aes128gcm encryption.
 
+### Faster doctor calendar
+
+- Add the same hours to several days at once, with Mon–Fri, Mon–Sat and Every day shortcuts. If any day clashes, nothing is saved and the clash is named.
+- Edit hours in place (time, minutes per patient, location). Appointments already booked keep their time.
+- Copy a whole day, morning and evening sessions alike, to other days, optionally replacing what those days already have at this practice. Hours at other organizations are never removed.
+- Weekly hours are grouped by doctor.
+
 ### Audit fixes
 
 - A patient can no longer cancel a paid appointment online, so the money is not left with the clinic unseen. They are asked to contact the clinic, which can cancel and refund. Rescheduling still works.

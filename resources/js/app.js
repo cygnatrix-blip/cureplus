@@ -521,6 +521,20 @@ if (chatThread) {
     });
 }
 
+// Day shortcuts (Mon–Fri, Mon–Sat...) tick the matching day boxes in their own form.
+document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-pick-days]');
+
+    if (!button) {
+        return;
+    }
+
+    const days = button.dataset.pickDays === '' ? [] : button.dataset.pickDays.split(',');
+    button.closest('fieldset').querySelectorAll('input[type="checkbox"]').forEach((box) => {
+        box.checked = days.includes(box.value);
+    });
+});
+
 // Queue actions respond at once and reconcile with the server in the background.
 document.addEventListener('submit', async (event) => {
     if (event.target.dataset?.optimistic === undefined) {
