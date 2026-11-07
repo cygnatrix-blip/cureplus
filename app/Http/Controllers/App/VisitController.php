@@ -11,12 +11,12 @@ use App\Models\VisitAttachment;
 use App\Models\Vital;
 use App\Services\AppointmentService;
 use App\Services\AuditLogger;
+use App\Services\Storage\DriveFiles;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -149,9 +149,6 @@ class VisitController extends Controller
     {
         $this->audit->record('visit_attachments.viewed', $attachment);
 
-        return Storage::disk($attachment->disk)->download($attachment->path, $attachment->original_name, [
-            'Content-Type' => $attachment->mime_type,
-            'X-Content-Type-Options' => 'nosniff',
-        ]);
+        return app(DriveFiles::class)->serve($attachment);
     }
 }

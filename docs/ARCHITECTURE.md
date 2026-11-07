@@ -250,6 +250,7 @@ erDiagram
 | Clinical | `patients`, `doctor_availability`, `calendar_blocks`, `appointments`, `visits`, `vitals`, `visit_attachments`, `prescriptions`, `prescription_items`, `follow_ups` | Yes |
 | Catalogue | `medicines`; `favourite_medicines`, `medicine_requests`, `templates` | Global; rest scoped (`templates` may be platform-wide) |
 | Billing | `doctor_fees`, `service_items`, `invoices`, `invoice_items`, `payments`, `refunds`, `organization_integrations`, `webhook_events` | Yes |
+| File storage | `drive_accounts`: a practice's Google accounts for copies of `visit_attachments` and `appointment_messages` files (`DriveFiles`, `GoogleDrive`) | Yes |
 | Portal | `consents`, `data_requests` | Bound to the account |
 | Messaging | `message_logs`; `push_subscriptions`, `notification_preferences` | Scoped; bound to the subscriber |
 | Business | `plans`, `coupons`, `announcements`, `announcement_reads`; `organization_subscriptions`, `platform_invoices`, `feature_flags`, `support_tickets`, `ticket_messages` | Global; rest scoped |

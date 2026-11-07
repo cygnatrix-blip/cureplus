@@ -141,5 +141,39 @@
             <button class="btn btn-primary">Save WhatsApp</button>
         </form>
         <form method="POST" action="{{ route('app.integrations.whatsapp.test') }}">@csrf<button class="btn btn-secondary">Test WhatsApp connection</button></form>
+
+        <section class="card card-body space-y-3" id="google-drive">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <h2 class="font-semibold text-slate-900">Google Drive for patient files</h2>
+                <span @class(['badge', 'badge-green' => $driveAccounts->contains('status', 'active'), 'badge-slate' => ! $driveAccounts->contains('status', 'active')])>{{ $driveAccounts->contains('status', 'active') ? 'On' : 'Off' }}</span>
+            </div>
+            <p class="text-sm text-slate-600">Patient files are always saved on CurePlus first. Connect your Google account and a copy of each visit file and chat file also goes into a "CurePlus" folder in your Drive. Connect more than one Google account for more space; new files go to the one with the most room.</p>
+            <p class="text-sm text-slate-600">CurePlus can only see the files it puts there, never the rest of your Drive. Patients and staff still open files through CurePlus, with the same permissions as now.</p>
+            @if (! $driveAvailable)
+                <p class="rounded-lg bg-slate-50 p-3 text-sm text-slate-700">Google Drive is not available yet. Please ask CurePlus support.</p>
+            @else
+                @foreach ($driveAccounts as $account)
+                    <div class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 p-3">
+                        <div class="min-w-0">
+                            <p class="font-medium text-slate-900 break-all">{{ $account->google_email }}</p>
+                            <p class="text-xs text-slate-500">{{ $account->freeBytes() === null ? 'No storage limit' : \App\Models\DriveAccount::readableSize($account->freeBytes()).' free for new files' }}</p>
+                            @if ($account->last_error)<p class="text-xs text-amber-700">{{ $account->last_error }}</p>@endif
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span @class(['badge', 'badge-green' => $account->isActive(), 'badge-red' => ! $account->isActive()])>{{ $account->statusLabel() }}</span>
+                            @if (! $account->isActive())<a class="btn btn-secondary" href="{{ route('app.integrations.drive.connect') }}">Connect again</a>@endif
+                            <form method="POST" action="{{ route('app.integrations.drive.disconnect', $account) }}" data-confirm="Disconnect {{ $account->google_email }}? Files already copied stay in that Drive, and new files go to your other Drives or stay on CurePlus.">@csrf<button class="btn btn-secondary">Disconnect</button></form>
+                        </div>
+                    </div>
+                @endforeach
+                <p class="text-sm text-slate-700">{{ $driveFiles['synced'] }} files copied to Google Drive, {{ $driveFiles['waiting'] }} waiting.@if ($driveFiles['waiting'] > 0 && $driveAccounts->contains('status', 'active')) Copies are made every few minutes.@endif</p>
+                @if ($organization->drive_server_copy === \App\Services\Storage\DriveFiles::REMOVE)
+                    <p class="rounded-lg bg-amber-50 p-3 text-sm text-amber-900" role="alert">As agreed with CurePlus, copied files are removed from CurePlus servers, so <strong>your Google Drive holds the only copy</strong>. Do not delete the CurePlus folder or its files: doctors must keep patient records for at least 3 years.</p>
+                @elseif ($organization->drive_server_copy === \App\Services\Storage\DriveFiles::KEEP)
+                    <p class="rounded-lg bg-slate-50 p-3 text-sm text-slate-700">CurePlus also keeps a copy of every file on its servers, as agreed.</p>
+                @endif
+                <a class="btn btn-primary" href="{{ route('app.integrations.drive.connect') }}">{{ $driveAccounts->isEmpty() ? 'Connect Google Drive' : 'Connect another Google account' }}</a>
+            @endif
+        </section>
     </div>
 </x-layouts.app>

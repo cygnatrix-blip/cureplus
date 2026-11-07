@@ -1,8 +1,10 @@
 <?php
 
+use App\Jobs\MoveDriveFiles;
 use App\Jobs\RunBackup;
 use App\Models\BackupRun;
 use App\Models\MessageLog;
+use App\Models\Organization;
 use App\Models\OrganizationCounter;
 use App\Models\OtpCode;
 use App\Models\RestoreTest;
@@ -14,6 +16,7 @@ use App\Services\Billing\SubscriptionService;
 use App\Services\Domains\DomainService;
 use App\Services\Messaging\ReminderScheduler;
 use App\Services\OrganizationVerification;
+use App\Services\Storage\DriveFiles;
 use App\Services\VideoPayments;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -39,6 +42,17 @@ Schedule::call(fn () => app(VideoPayments::class)->releaseUnpaid())
 Schedule::call(fn () => app(AppointmentChat::class)->closeStale())
     ->name('close-stale-chats')
     ->dailyAt('02:15');
+
+Schedule::call(fn () => app(DriveFiles::class)->syncPending())
+    ->name('copy-files-to-google-drive')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10);
+
+// Practices that agreed to rely on Google Drive also have newer files' server copies removed.
+Schedule::call(function (): void {
+    Organization::query()->where('drive_server_copy', DriveFiles::REMOVE)->pluck('id')
+        ->each(fn (int $id) => MoveDriveFiles::dispatch($id, MoveDriveFiles::REMOVE));
+})->name('remove-agreed-server-copies')->dailyAt('03:30');
 
 Schedule::call(function (): void {
     OtpCode::query()->where('expires_at', '<', now()->subDay())->delete();

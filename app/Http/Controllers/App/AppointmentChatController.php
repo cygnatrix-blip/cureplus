@@ -10,9 +10,9 @@ use App\Models\Appointment;
 use App\Models\AppointmentMessage;
 use App\Services\AppointmentChat;
 use App\Services\AuditLogger;
+use App\Services\Storage\DriveFiles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -108,11 +108,6 @@ class AppointmentChatController extends Controller
      */
     public static function stream(AppointmentMessage $message): StreamedResponse
     {
-        return Storage::disk((string) $message->attachment_disk)->response(
-            (string) $message->attachment_path,
-            (string) $message->attachment_name,
-            ['Content-Type' => (string) $message->attachment_mime, 'X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'private, no-store'],
-            $message->isImage() ? 'inline' : 'attachment',
-        );
+        return app(DriveFiles::class)->serve($message, $message->isImage(), ['Cache-Control' => 'private, no-store']);
     }
 }

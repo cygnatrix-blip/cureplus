@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\CustomDomainController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DataRequestController;
 use App\Http\Controllers\Admin\DoctorController;
+use App\Http\Controllers\Admin\DriveStorageController;
 use App\Http\Controllers\Admin\FeatureFlagController;
 use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\MedicineController;
@@ -82,6 +83,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/backups/restore-tests', [BackupController::class, 'logRestoreTest'])->can('platform.backups.manage')->name('backups.restore-tests');
             Route::post('/backups/{run}/verify', [BackupController::class, 'verify'])->can('platform.backups.manage')->name('backups.verify');
             Route::get('/backups/{run}/download', [BackupController::class, 'download'])->can('platform.backups.manage')->name('backups.download');
+
+            Route::get('/file-storage', [DriveStorageController::class, 'index'])->can('platform.backups.manage')->name('drive.index');
+            Route::post('/file-storage/{organization}/decision', [DriveStorageController::class, 'decide'])->can('platform.backups.manage')->name('drive.decide');
+            Route::post('/file-storage/{organization}/remove-server-copies', [DriveStorageController::class, 'removeServerCopies'])->can('platform.backups.manage')->name('drive.remove');
+            Route::post('/file-storage/{organization}/restore', [DriveStorageController::class, 'restore'])->can('platform.backups.manage')->name('drive.restore');
 
             Route::get('/api-keys', [ApiKeyController::class, 'index'])->can('platform.api-keys.manage')->name('api-keys.index');
             Route::post('/api-keys', [ApiKeyController::class, 'store'])->can('platform.api-keys.manage')->name('api-keys.store');

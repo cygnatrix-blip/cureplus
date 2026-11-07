@@ -43,6 +43,8 @@ class PlatformIntegrationController extends Controller
             'settings.razorpay_key_id' => ['nullable', 'string', 'max:100'],
             'settings.razorpay_key_secret' => ['nullable', 'string', 'max:200'],
             'settings.razorpay_webhook_secret' => ['nullable', 'string', 'max:200'],
+            'settings.google_client_id' => ['nullable', 'string', 'max:200'],
+            'settings.google_client_secret' => ['nullable', 'string', 'max:200'],
         ]);
 
         // Form names use underscores for the group separator, so map them back to keys.

@@ -42,6 +42,15 @@
                     <x-field name="settings[push_private_key]" label="Private key" type="password" autocomplete="new-password" :placeholder="$secret('push.private_key')" />
                 </div>
             </section>
+            <section class="card card-body space-y-3">
+                <h2 class="font-semibold text-slate-900">Google Drive (practices' own file storage)</h2>
+                <p class="text-sm text-slate-600">An OAuth client of type "Web application" from Google Cloud Console, with the Google Drive API turned on and only the <span class="font-mono text-xs">drive.file</span> scope on the consent screen. Authorised redirect URI:</p>
+                <p class="font-mono text-xs break-all">{{ route('app.integrations.drive.callback') }}</p>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <x-field name="settings[google_client_id]" label="Client ID" autocomplete="off" :value="$settings->get('google.client_id')" />
+                    <x-field name="settings[google_client_secret]" label="Client secret" type="password" autocomplete="new-password" :placeholder="$secret('google.client_secret')" />
+                </div>
+            </section>
             @if (config('plans.enabled'))
             <section class="card card-body space-y-3">
                 <h2 class="font-semibold text-slate-900">Platform Razorpay (subscriptions)</h2>

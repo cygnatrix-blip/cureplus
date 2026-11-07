@@ -29,6 +29,7 @@ use App\Services\Portal\PatientRecords;
 use App\Services\Portal\PortalBrand;
 use App\Services\PrescriptionPdf;
 use App\Services\QrCodeService;
+use App\Services\Storage\DriveFiles;
 use App\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\RequestException;
@@ -36,7 +37,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -276,7 +276,7 @@ class PortalController extends Controller
         $report = $this->records->report($this->account($request), $id);
         $this->audit->record('visit_attachments.downloaded_by_patient', $report);
 
-        return Storage::disk($report->disk)->download($report->path, $report->original_name, ['Content-Type' => $report->mime_type, 'X-Content-Type-Options' => 'nosniff']);
+        return app(DriveFiles::class)->serve($report);
     }
 
     public function consents(Request $request): View

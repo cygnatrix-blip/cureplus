@@ -46,6 +46,7 @@ class Organization extends Model
             'branding' => 'array',
             'approved_at' => 'datetime',
             'suspended_at' => 'datetime',
+            'drive_server_copy_decided_at' => 'datetime',
         ];
     }
 

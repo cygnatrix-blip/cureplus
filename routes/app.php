@@ -13,6 +13,7 @@ use App\Http\Controllers\App\DesignController;
 use App\Http\Controllers\App\DoctorProfileController;
 use App\Http\Controllers\App\DocumentShareController;
 use App\Http\Controllers\App\DomainController;
+use App\Http\Controllers\App\DriveController;
 use App\Http\Controllers\App\DuesController;
 use App\Http\Controllers\App\FollowUpController;
 use App\Http\Controllers\App\IntegrationController;
@@ -199,6 +200,9 @@ Route::prefix('app')->name('app.')->middleware(['auth:web', 'account.active', 'n
                 Route::post('/integrations/smtp/test', [IntegrationController::class, 'testSmtp'])->can('integrations.manage')->name('integrations.smtp.test');
                 Route::post('/integrations/whatsapp/test', [IntegrationController::class, 'testWhatsapp'])->can('integrations.manage')->name('integrations.whatsapp.test');
                 Route::post('/integrations/whatsapp', [IntegrationController::class, 'saveWhatsapp'])->can('integrations.manage')->name('integrations.whatsapp');
+                Route::get('/integrations/google-drive/connect', [DriveController::class, 'connect'])->can('integrations.manage')->name('integrations.drive.connect');
+                Route::get('/integrations/google-drive/callback', [DriveController::class, 'callback'])->can('integrations.manage')->name('integrations.drive.callback');
+                Route::post('/integrations/google-drive/{account}/disconnect', [DriveController::class, 'disconnect'])->can('integrations.manage')->name('integrations.drive.disconnect');
 
                 Route::get('/settings/organization', [OrganizationSettingsController::class, 'edit'])->can('settings.manage')->name('settings.organization');
                 Route::put('/settings/organization', [OrganizationSettingsController::class, 'update'])->can('settings.manage')->name('settings.organization.update');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\App;
 
 use App\Http\Controllers\Controller;
+use App\Models\DriveAccount;
 use App\Models\MessageLog;
 use App\Models\OrganizationIntegration;
 use App\Services\AuditLogger;
@@ -10,6 +11,8 @@ use App\Services\Messaging\WhatsAppFactory;
 use App\Services\OrganizationMail;
 use App\Services\Payments\GatewayFactory;
 use App\Services\Payments\UpiPayments;
+use App\Services\Storage\DriveFiles;
+use App\Services\Storage\GoogleDrive;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
@@ -22,7 +25,7 @@ class IntegrationController extends Controller
 {
     public function __construct(private readonly TenantContext $tenant, private readonly AuditLogger $audit) {}
 
-    public function index(): View
+    public function index(GoogleDrive $drive, DriveFiles $files): View
     {
         $integrations = OrganizationIntegration::query()->get()->keyBy('kind');
 
@@ -36,6 +39,10 @@ class IntegrationController extends Controller
             'emailsNotSent' => MessageLog::withoutTenancy()->where('organization_id', $this->tenant->id())->where('status', 'no_clinic_email')->where('created_at', '>=', now()->subDays(30))->count(),
             'whatsapp' => $integrations->get('whatsapp'),
             'webhookUrl' => route('webhooks.razorpay', $this->tenant->organization()->uuid),
+            'driveAvailable' => $drive->isConfigured(),
+            'driveAccounts' => DriveAccount::query()->where('status', '!=', DriveAccount::DISCONNECTED)->orderBy('google_email')->get(),
+            'driveFiles' => $files->summary((int) $this->tenant->id()),
+            'organization' => $this->tenant->organization(),
         ]);
     }
 

@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Patient files in the practice's own Google Drive
+
+- Practices can connect one or more Google accounts under Integrations. A copy of every visit file and chat file goes into a "CurePlus" folder in their Drive, choosing the account with the most free space. More accounts mean more space.
+- CurePlus uses Google's `drive.file` permission, so it only sees the files it puts there. Files still open through CurePlus with the same permissions and audit log.
+- Files are always saved on the server first and copied every five minutes. A copy only counts once Google reports identical contents. Sample patients' files are never copied.
+- Server copies stay until a platform admin records the practice's choice under the new File storage page: keep them (charged separately) or remove them. Before removal, each file is checked in Drive. A file missing from Drive keeps its server copy and is copied again.
+- The admin can bring files back from Drive to the server. A Drive holding the only copy of any file cannot be disconnected until that is done.
+- A Google account whose permission was withdrawn is marked "Connect again", and its files wait on the server.
+
 ### Appointment chat, and unfinished appointments stay on the queue
 
 - Every appointment has a chat between the patient and their doctor, for questions and reports (PDF, JPG or PNG up to 10 MB). Only the appointment's own doctor can read it at the practice. Messages are encrypted at rest.

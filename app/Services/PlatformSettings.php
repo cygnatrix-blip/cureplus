@@ -14,7 +14,7 @@ class PlatformSettings
 {
     private const CACHE_KEY = 'platform-settings.v1';
 
-    public const SECRET_KEYS = ['mail.password', 'sms.token', 'whatsapp.token', 'push.private_key', 'razorpay.key_secret', 'razorpay.webhook_secret'];
+    public const SECRET_KEYS = ['mail.password', 'sms.token', 'whatsapp.token', 'push.private_key', 'razorpay.key_secret', 'razorpay.webhook_secret', 'google.client_secret'];
 
     private const CONFIG_MAP = [
         'mail.host' => 'mail.mailers.smtp.host',
@@ -35,6 +35,8 @@ class PlatformSettings
         'razorpay.key_id' => 'plans.razorpay.key_id',
         'razorpay.key_secret' => 'plans.razorpay.key_secret',
         'razorpay.webhook_secret' => 'plans.razorpay.webhook_secret',
+        'google.client_id' => 'services.google.client_id',
+        'google.client_secret' => 'services.google.client_secret',
         'organizations.require_approval' => 'cureplus.organizations.require_approval',
     ];
 

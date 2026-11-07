@@ -157,6 +157,17 @@ There is nothing to set up on the server. Each doctor creates a Google Meet link
 
 In Super Admin, Integrations, press "Generate web-push keys" and set a contact address. Do this once: new keys make every device subscribe again.
 
+### Google Drive for practices' files
+
+Practices can keep a copy of patient files (visit files and chat files) in their own Google Drive. To offer it:
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), create a project and enable the **Google Drive API**.
+2. Under **OAuth consent screen**, choose External, fill in the app name, support email, logo, home page, privacy policy and terms links, and add only the `.../auth/drive.file` scope. Publish the app. Because `drive.file` is not a restricted scope, Google's paid security assessment is not required, though Google may still check the app's branding.
+3. Under **Credentials**, create an OAuth client ID of type **Web application** with this authorised redirect URI: `https://cureplus.cygnatrix.com/app/integrations/google-drive/callback`.
+4. Paste the client ID and secret into Super Admin, Integrations, Google Drive, or set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env`.
+
+Files are copied every five minutes. Server copies stay until a platform admin records the practice's choice in Super Admin, File storage, and removes them. Once that choice is "remove", newer files' server copies are removed nightly. Each file is checked in Drive before its server copy is deleted.
+
 ### Razorpay
 
 There are two separate kinds of account:

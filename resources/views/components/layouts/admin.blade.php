@@ -29,6 +29,7 @@
         ],
         'System' => [
             ['Backups', 'admin.backups.index', 'platform.backups.manage'],
+            ['File storage', 'admin.drive.index', 'platform.backups.manage'],
             ['Integrations', 'admin.integrations.index', 'platform.integrations.manage'],
             ['API keys', 'admin.api-keys.index', 'platform.api-keys.manage'],
             ['System configuration', 'admin.system.index', 'platform.system.manage'],
