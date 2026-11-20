@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Professional prescription layout
+
+- New letterhead: practice logo, name, address, phone and email, with the doctor's qualification, specialty, registration number and medical council. The council is recorded on each prescription as it was.
+- Patient block with age and sex, patient ID, mobile, date and a prescription number (RX-000123).
+- Allergies highlighted. Chief complaints, history, vitals (with BMI) and diagnosis in their own sections.
+- Medicines in capitals as NMC advises, in a numbered table of dose, timing and duration, with a key for 1-0-1 doses.
+- Signature block, a footer with the issue time, and a Telemedicine Practice Guidelines 2020 note on video consultations. Screen, print, PDF and shared links match.
+- Blood pressure entered the wrong way round (such as 80/120), or only half of it, is now refused.
+
 ### Patient files in the practice's own Google Drive
 
 - Practices can connect one or more Google accounts under Integrations. A copy of every visit file and chat file goes into a "CurePlus" folder in their Drive, choosing the account with the most free space. More accounts mean more space.

@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -93,13 +94,18 @@ class VisitController extends Controller
     public function storeVitals(Request $request, Visit $visit): RedirectResponse
     {
         $data = $request->validate([
-            'bp_systolic' => ['nullable', 'integer', 'between:40,300'],
-            'bp_diastolic' => ['nullable', 'integer', 'between:20,200'],
+            // BP is only meaningful as a pair, and the upper number is always the larger one.
+            'bp_systolic' => ['nullable', 'required_with:bp_diastolic', 'integer', 'between:40,300', Rule::when($request->filled('bp_diastolic'), 'gt:bp_diastolic')],
+            'bp_diastolic' => ['nullable', 'required_with:bp_systolic', 'integer', 'between:20,200'],
             'pulse' => ['nullable', 'integer', 'between:20,300'],
             'temperature_f' => ['nullable', 'numeric', 'between:80,115'],
             'spo2' => ['nullable', 'integer', 'between:30,100'],
             'weight_kg' => ['nullable', 'numeric', 'between:0.2,400'],
             'height_cm' => ['nullable', 'numeric', 'between:20,260'],
+        ], [
+            'bp_systolic.gt' => 'The upper BP number (systolic) must be higher than the lower one (diastolic), for example 120/80.',
+            'bp_systolic.required_with' => 'Enter both BP numbers.',
+            'bp_diastolic.required_with' => 'Enter both BP numbers.',
         ]);
 
         Vital::query()->updateOrCreate(['visit_id' => $visit->id], $data + ['recorded_by' => $request->user()->id]);

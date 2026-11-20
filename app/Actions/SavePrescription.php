@@ -30,6 +30,7 @@ class SavePrescription
                 'doctor_specialty' => $profile?->specialty,
                 'is_teleconsultation' => $visit->appointment_id !== null && Appointment::withoutTenancy()->whereKey($visit->appointment_id)->value('mode') === AppointmentMode::Online,
                 'doctor_registration_number' => $profile?->registration_number,
+                'doctor_registration_council' => $profile?->registration_council,
                 'lab_advice' => $data['lab_advice'] ?? null,
                 'patient_instructions' => $data['patient_instructions'] ?? null,
                 'instructions_language' => $data['instructions_language'] ?? 'en',

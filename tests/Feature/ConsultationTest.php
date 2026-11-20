@@ -175,17 +175,17 @@ class ConsultationTest extends TestCase
     public function test_a_prescription_records_the_doctors_details_as_they_were(): void
     {
         [, , $doctor, , $visit] = $this->consultation();
-        $profile = DoctorProfile::query()->create(['user_id' => $doctor->id, 'qualification' => 'MBBS', 'registration_number' => 'WB-1234']);
+        $profile = DoctorProfile::query()->create(['user_id' => $doctor->id, 'qualification' => 'MBBS', 'registration_number' => 'WB-1234', 'registration_council' => 'West Bengal Medical Council']);
         $this->actingAs($doctor, 'web');
 
         $this->put(route('app.prescriptions.update', $visit), $this->rx())->assertRedirect();
 
-        $profile->update(['qualification' => 'MBBS, MD', 'registration_number' => 'WB-9999']);
+        $profile->update(['qualification' => 'MBBS, MD', 'registration_number' => 'WB-9999', 'registration_council' => 'Delhi Medical Council']);
 
         $prescription = Prescription::withoutTenancy()->firstOrFail();
         $this->assertSame('MBBS', $prescription->doctor_qualification);
         $this->assertSame('WB-1234', $prescription->doctor_registration_number);
-        $this->get(route('app.prescriptions.show', $prescription))->assertOk()->assertSee('WB-1234')->assertSee('After food');
+        $this->get(route('app.prescriptions.show', $prescription))->assertOk()->assertSee('WB-1234')->assertSee('West Bengal Medical Council')->assertDontSee('Delhi Medical Council')->assertSee($prescription->number())->assertSee('After food');
     }
 
     public function test_the_prescription_carries_the_consultation_details_but_not_private_notes(): void
@@ -202,11 +202,21 @@ class ConsultationTest extends TestCase
         $expected = ['Penicillin', 'Fever for 3 days', 'Type 2 diabetes', 'Viral fever', 'BP 130/85 mmHg', 'Pulse 78/min', 'Temp 100.4 °F', 'SpO2 97%', 'Weight 70 kg', 'BMI 22.9'];
         $this->get(route('app.prescriptions.show', $prescription))->assertOk()->assertSeeText($expected)->assertDontSee('Doctor-only remark');
 
-        $pdfHtml = app(TenantContext::class)->run(Organization::query()->findOrFail($prescription->organization_id), fn () => view('pdf.prescription', ['prescription' => $prescription->load(['items', 'patient', 'location', 'visit.vital'])])->render());
+        $pdfHtml = app(TenantContext::class)->run(Organization::query()->findOrFail($prescription->organization_id), fn () => view('pdf.prescription', ['prescription' => $prescription->load(Prescription::DOCUMENT_RELATIONS)])->render());
         foreach ($expected as $text) {
             $this->assertStringContainsString(e($text), $pdfHtml);
         }
         $this->assertStringNotContainsString('Doctor-only remark', $pdfHtml);
+    }
+
+    public function test_blood_pressure_entered_the_wrong_way_round_is_refused(): void
+    {
+        [, , $doctor, , $visit] = $this->consultation();
+        $this->actingAs($doctor, 'web')->from(route('app.visits.show', $visit));
+
+        $this->post(route('app.visits.vitals', $visit), ['bp_systolic' => 80, 'bp_diastolic' => 120])->assertSessionHasErrors('bp_systolic');
+        $this->post(route('app.visits.vitals', $visit), ['bp_systolic' => 120])->assertSessionHasErrors('bp_diastolic');
+        $this->post(route('app.visits.vitals', $visit), ['pulse' => 72])->assertSessionHasNoErrors();
     }
 
     public function test_a_prescription_needs_a_medicine_and_valid_rows(): void

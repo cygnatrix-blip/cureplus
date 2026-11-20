@@ -9,7 +9,7 @@ class PrescriptionPdf
 {
     public function render(Prescription $prescription): string
     {
-        $prescription->loadMissing(['items', 'patient', 'location', 'visit.vital']);
+        $prescription->loadMissing(Prescription::DOCUMENT_RELATIONS);
 
         return Pdf::loadView('pdf.prescription', ['prescription' => $prescription])->setPaper('a4')->output();
     }
