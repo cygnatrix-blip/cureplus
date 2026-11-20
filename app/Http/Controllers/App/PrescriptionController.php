@@ -148,7 +148,7 @@ class PrescriptionController extends Controller
     public function show(Prescription $prescription, AuditLogger $audit): View
     {
         $audit->record('prescriptions.viewed', $prescription);
-        $prescription->load(['items', 'patient', 'location', 'visit:id,diagnosis']);
+        $prescription->load(['items', 'patient', 'location', 'visit.vital']);
 
         return view('app.prescriptions.show', ['prescription' => $prescription, 'shareLink' => DocumentLink::prescription($prescription->id)]);
     }

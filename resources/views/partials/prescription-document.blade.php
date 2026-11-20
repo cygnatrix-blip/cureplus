@@ -17,7 +17,16 @@
             @if ($prescription->is_teleconsultation)<p>{{ __('rx.teleconsultation', [], $language) }}</p>@endif
         </div>
     </div>
-    @if ($prescription->visit?->diagnosis)<p class="mt-3 text-sm"><strong>Diagnosis:</strong> {{ $prescription->visit->diagnosis }}</p>@endif
+    @php($readings = $prescription->visit?->vital?->readings() ?? [])
+    <div class="mt-3 space-y-1 text-sm">
+        @if ($prescription->patient->allergies)<p class="font-medium text-rose-800"><strong>Allergies:</strong> {{ $prescription->patient->allergies }}</p>@endif
+        @if ($prescription->visit?->complaints)<p class="whitespace-pre-line"><strong>Complaints:</strong> {{ $prescription->visit->complaints }}</p>@endif
+        @if ($prescription->visit?->history)<p class="whitespace-pre-line"><strong>History:</strong> {{ $prescription->visit->history }}</p>@endif
+        @if ($readings !== [])
+            <p><strong>Vitals:</strong> @foreach ($readings as $label => $value)<span class="whitespace-nowrap">{{ $label }} {{ $value }}</span>@if (! $loop->last) · @endif @endforeach</p>
+        @endif
+        @if ($prescription->visit?->diagnosis)<p class="whitespace-pre-line"><strong>Diagnosis:</strong> {{ $prescription->visit->diagnosis }}</p>@endif
+    </div>
     <h3 class="mt-4 text-lg font-semibold">{{ $isAlliedPlan ? __('rx.plan', [], $language) : '℞ '.__('rx.medicines', [], $language) }}</h3>
     <ol class="mt-2 list-decimal space-y-2 pl-5 text-sm">
         @foreach ($prescription->items as $item)

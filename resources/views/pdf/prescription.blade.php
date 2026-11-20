@@ -24,7 +24,12 @@
     {{ $prescription->patient->name }} · {{ $prescription->patient->patient_code }}
     @if ($prescription->patient->ageInYears() !== null) · {{ $prescription->patient->ageInYears() }} yrs @endif
     · {{ $prescription->issued_at?->format('d M Y') }}
-    @if ($prescription->visit->diagnosis)<p><strong>Diagnosis:</strong> {{ $prescription->visit->diagnosis }}</p>@endif
+    @php($readings = $prescription->visit?->vital?->readings() ?? [])
+    @if ($prescription->patient->allergies)<p><strong>Allergies:</strong> {{ $prescription->patient->allergies }}</p>@endif
+    @if ($prescription->visit?->complaints)<p><strong>Complaints:</strong> {!! nl2br(e($prescription->visit->complaints)) !!}</p>@endif
+    @if ($prescription->visit?->history)<p><strong>History:</strong> {!! nl2br(e($prescription->visit->history)) !!}</p>@endif
+    @if ($readings !== [])<p><strong>Vitals:</strong> {{ collect($readings)->map(fn ($value, $label) => "{$label} {$value}")->implode(' · ') }}</p>@endif
+    @if ($prescription->visit?->diagnosis)<p><strong>Diagnosis:</strong> {!! nl2br(e($prescription->visit->diagnosis)) !!}</p>@endif
     <h3>Rx</h3>
     <table>
         <tr><th>Medicine</th><th>Dose</th><th>When</th><th>Days</th><th>Notes</th></tr>

@@ -30,7 +30,7 @@ class DocumentLinkController extends Controller
         $this->audit->record('prescriptions.viewed_by_link', $record);
 
         $html = $this->tenant->run($organization, function () use ($record, $organization, $request): string {
-            $record->load(['items', 'patient', 'location', 'visit:id,diagnosis']);
+            $record->load(['items', 'patient', 'location', 'visit.vital']);
 
             return view('public.document', [
                 'organization' => $organization,

@@ -38,7 +38,8 @@
                             </select>
                         @endif
                     </div>
-                    @foreach (['complaints' => 'Complaints', 'history' => 'History', 'diagnosis' => 'Diagnosis', 'notes' => 'Notes'] as $field => $label)
+                    <p class="text-xs text-slate-500">Complaints, history, diagnosis and the vitals print on the prescription. Private notes stay with clinicians.</p>
+                    @foreach (['complaints' => 'Complaints', 'history' => 'History', 'diagnosis' => 'Diagnosis', 'notes' => 'Private notes (not printed)'] as $field => $label)
                         <div>
                             <label class="label" for="{{ $field }}">{{ $label }}</label>
                             <textarea class="input" id="{{ $field }}" name="{{ $field }}" rows="3" @disabled(! $canEdit)>{{ old($field, $visit->{$field}) }}</textarea>

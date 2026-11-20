@@ -96,7 +96,7 @@ class AccessPeriodTest extends TestCase
 
         $organization->forceFill(['access_until' => today()->addDays(10)])->save();
         $this->post(route('admin.organizations.access', $organization), ['months' => '3']);
-        $this->assertSame(today()->addDays(10)->addMonths(3)->toDateString(), $organization->fresh()->access_until->toDateString());
+        $this->assertSame(today()->addDays(10)->addMonthsNoOverflow(3)->toDateString(), $organization->fresh()->access_until->toDateString());
 
         $organization->forceFill(['access_until' => today()->subMonth()])->save();
         $this->post(route('admin.organizations.access', $organization), ['months' => '1']);

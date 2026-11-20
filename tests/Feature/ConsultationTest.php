@@ -188,6 +188,27 @@ class ConsultationTest extends TestCase
         $this->get(route('app.prescriptions.show', $prescription))->assertOk()->assertSee('WB-1234')->assertSee('After food');
     }
 
+    public function test_the_prescription_carries_the_consultation_details_but_not_private_notes(): void
+    {
+        [, , $doctor, $patient, $visit] = $this->consultation();
+        $patient->update(['allergies' => 'Penicillin']);
+        $this->actingAs($doctor, 'web');
+
+        $this->post(route('app.visits.vitals', $visit), ['bp_systolic' => 130, 'bp_diastolic' => 85, 'pulse' => 78, 'temperature_f' => 100.4, 'spo2' => 97, 'weight_kg' => 70, 'height_cm' => 175])->assertSessionHasNoErrors();
+        $this->put(route('app.visits.update', $visit), ['complaints' => 'Fever for 3 days', 'history' => 'Type 2 diabetes', 'diagnosis' => 'Viral fever', 'notes' => 'Doctor-only remark'])->assertSessionHasNoErrors();
+        $this->put(route('app.prescriptions.update', $visit), $this->rx())->assertRedirect();
+        $prescription = Prescription::withoutTenancy()->firstOrFail();
+
+        $expected = ['Penicillin', 'Fever for 3 days', 'Type 2 diabetes', 'Viral fever', 'BP 130/85 mmHg', 'Pulse 78/min', 'Temp 100.4 °F', 'SpO2 97%', 'Weight 70 kg', 'BMI 22.9'];
+        $this->get(route('app.prescriptions.show', $prescription))->assertOk()->assertSeeText($expected)->assertDontSee('Doctor-only remark');
+
+        $pdfHtml = app(TenantContext::class)->run(Organization::query()->findOrFail($prescription->organization_id), fn () => view('pdf.prescription', ['prescription' => $prescription->load(['items', 'patient', 'location', 'visit.vital'])])->render());
+        foreach ($expected as $text) {
+            $this->assertStringContainsString(e($text), $pdfHtml);
+        }
+        $this->assertStringNotContainsString('Doctor-only remark', $pdfHtml);
+    }
+
     public function test_a_prescription_needs_a_medicine_and_valid_rows(): void
     {
         [, , $doctor, , $visit] = $this->consultation();
